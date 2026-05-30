@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>F1 Intelligence Platform</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.8.0/Recharts.min.js"></script>
+<style>
+  :root {
+    --f1-red: #E10600;
+    --f1-dark: #0A0A0A;
+    --f1-card: #111111;
+    --f1-border: #222222;
+    --f1-text: #F0F0F0;
+    --f1-muted: #888888;
+    --f1-accent: #E10600;
+    --f1-gold: #FFD700;
+    --mercedes: #00CACA;
+    --ferrari: #FF0000;
+    --mclaren: #FF8000;
+    --redbull: #3671C6;
+    --alpine: #FF69B4;
+    --haas: #B6BABD;
+    --rb: #6692FF;
+    --williams: #00A3E0;
+    --aston: #358C75;
+    --audi: #BB9B5B;
+    --cadillac: #7F7F7F;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--f1-dark); color: var(--f1-text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+  .header { background: #0A0A0A; border-bottom: 2px solid var(--f1-red); padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 56px; position: sticky; top: 0; z-index: 100; }
+  .logo { display: flex; align-items: center; gap: 12px; }
+  .logo-icon { width: 32px; height: 20px; background: var(--f1-red); clip-path: polygon(0 0, 85% 0, 100% 50%, 85% 100%, 0 100%, 15% 50%); }
+  .logo-text { font-size: 16px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+  .logo-sub { font-size: 10px; color: var(--f1-red); letter-spacing: 3px; text-transform: uppercase; font-weight: 600; }
+  .nav { display: flex; gap: 2px; }
+  .nav-btn { background: none; border: none; color: var(--f1-muted); padding: 8px 16px; cursor: pointer; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; border-radius: 4px; transition: all 0.2s; }
+  .nav-btn:hover, .nav-btn.active { color: var(--f1-text); background: #1a1a1a; }
+  .nav-btn.active { border-bottom: 2px solid var(--f1-red); border-radius: 0; }
+  .content { padding: 2rem; max-width: 1400px; margin: 0 auto; }
+  .page { display: none; }
+  .page.active { display: block; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 2rem; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 2rem; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 2rem; }
+  .stat-card { background: var(--f1-card); border: 1px solid var(--f1-border); border-radius: 8px; padding: 1.25rem; }
+  .stat-card.accent { border-left: 3px solid var(--f1-red); }
+  .stat-label { font-size: 11px; color: var(--f1-muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+  .stat-value { font-size: 28px; font-weight: 700; line-height: 1; }
+  .stat-sub { font-size: 12px; color: var(--f1-muted); margin-top: 4px; }
+  .card { background: var(--f1-card); border: 1px solid var(--f1-border); border-radius: 8px; padding: 1.5rem; }
+  .card-title { font-size: 13px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--f1-muted); margin-bottom: 1.25rem; display: flex; align-items: center; gap: 8px; }
+  .card-title::before { content: ''; width: 3px; height: 14px; background: var(--f1-red); border-radius: 2px; }
+  .section-title { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--f1-muted); margin-bottom: 1rem; }
+  .driver-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #1a1a1a; }
+  .driver-row:last-child { border-bottom: none; }
+  .driver-pos { width: 24px; font-size: 13px; font-weight: 700; color: var(--f1-muted); text-align: center; }
+  .driver-pos.p1 { color: var(--f1-gold); }
+  .driver-pos.p2 { color: #C0C0C0; }
+  .driver-pos.p3 { color: #CD7F32; }
+  .driver-color { width: 4px; height: 32px; border-radius: 2px; flex-shrink: 0; }
+  .driver-info { flex: 1; }
+  .driver-name { font-size: 14px; font-weight: 600; }
+  .driver-team { font-size: 11px; color: var(--f1-muted); }
+  .driver-pts { font-size: 16px; font-weight: 700; }
+  .driver-wins { font-size: 11px; color: var(--f1-muted); text-align: right; }
+  .prob-bar-wrap { flex: 1; }
+  .prob-bar-bg { background: #1a1a1a; border-radius: 2px; height: 6px; overflow: hidden; }
+  .prob-bar { height: 100%; border-radius: 2px; background: var(--f1-red); transition: width 0.5s; }
+  .prob-val { font-size: 12px; font-weight: 700; min-width: 40px; text-align: right; }
+  .race-card { background: #0f0f0f; border: 1px solid var(--f1-border); border-radius: 8px; padding: 1rem; cursor: pointer; transition: all 0.2s; }
+  .race-card:hover { border-color: var(--f1-red); }
+  .race-card.current { border-color: var(--f1-red); background: #160000; }
+  .race-round { font-size: 10px; color: var(--f1-red); letter-spacing: 2px; text-transform: uppercase; }
+  .race-name { font-size: 15px; font-weight: 700; margin: 4px 0; }
+  .race-date { font-size: 11px; color: var(--f1-muted); }
+  .race-flag { font-size: 20px; float: right; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; font-weight: 600; }
+  .badge-p1 { background: rgba(255,215,0,0.15); color: var(--f1-gold); border: 1px solid rgba(255,215,0,0.3); }
+  .badge-p2 { background: rgba(192,192,192,0.1); color: #C0C0C0; border: 1px solid rgba(192,192,192,0.2); }
+  .badge-p3 { background: rgba(205,127,50,0.1); color: #CD7F32; border: 1px solid rgba(205,127,50,0.2); }
+  .badge-dnf { background: rgba(225,6,0,0.1); color: var(--f1-red); border: 1px solid rgba(225,6,0,0.2); }
+  .badge-sc { background: rgba(255,210,0,0.1); color: #FFD200; border: 1px solid rgba(255,210,0,0.2); }
+  select, input { background: #1a1a1a; border: 1px solid var(--f1-border); color: var(--f1-text); padding: 8px 12px; border-radius: 6px; font-size: 13px; outline: none; }
+  select:focus, input:focus { border-color: var(--f1-red); }
+  .btn { background: var(--f1-red); color: white; border: none; padding: 10px 20px; border-radius: 6px; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+  .btn:hover { background: #c00400; }
+  .btn-ghost { background: transparent; color: var(--f1-text); border: 1px solid var(--f1-border); padding: 8px 16px; border-radius: 6px; font-size: 12px; cursor: pointer; transition: all 0.2s; }
+  .btn-ghost:hover { border-color: var(--f1-red); color: var(--f1-red); }
+  .tire { display: inline-block; width: 22px; height: 22px; border-radius: 50%; font-size: 9px; font-weight: 700; text-align: center; line-height: 22px; color: #000; }
+  .tire-S { background: #FF1744; }
+  .tire-M { background: #FFEB3B; }
+  .tire-H { background: #FFFFFF; }
+  .tire-I { background: #00BCD4; }
+  .tire-W { background: #2196F3; }
+  .championship-bar { height: 8px; border-radius: 4px; margin-top: 4px; transition: width 0.5s; }
+  .podium-display { display: flex; align-items: flex-end; justify-content: center; gap: 8px; margin: 1rem 0; }
+  .podium-block { text-align: center; }
+  .podium-stand { border-radius: 4px 4px 0 0; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 24px; }
+  .podium-driver { font-size: 12px; font-weight: 700; margin-top: 6px; }
+  .podium-team-dot { width: 8px; height: 8px; border-radius: 50%; margin: 3px auto; }
+  .flag { width: 24px; height: 16px; border-radius: 2px; display: inline-block; vertical-align: middle; margin-right: 6px; }
+  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.3} }
+  .tab-row { display: flex; gap: 4px; margin-bottom: 1.5rem; border-bottom: 1px solid var(--f1-border); padding-bottom: -1px; }
+  .tab { padding: 8px 20px; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; color: var(--f1-muted); border-bottom: 2px solid transparent; transition: all 0.2s; margin-bottom: -1px; }
+  .tab.active { color: var(--f1-text); border-bottom-color: var(--f1-red); }
+  .prediction-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
+  .pred-cell { background: #0f0f0f; border: 1px solid var(--f1-border); border-radius: 8px; padding: 12px; text-align: center; }
+  .pred-cell-label { font-size: 10px; color: var(--f1-muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+  .pred-cell-val { font-size: 20px; font-weight: 700; }
+  .pred-cell-val.win { color: var(--f1-gold); }
+  .pred-cell-val.podium { color: #C0C0C0; }
+  .pred-cell-val.dnf { color: var(--f1-red); }
+  .pred-cell-val.safe { color: #FFD200; }
+  .trend-up { color: #4CAF50; font-size: 11px; }
+  .trend-down { color: var(--f1-red); font-size: 11px; }
+
+  .dashboard-kpis { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:1.5rem; }
+  .dash-metric { background:#0f0f0f; border:1px solid var(--f1-border); border-radius:10px; padding:1rem 1.1rem; }
+  .dash-metric .metric-label { font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--f1-muted); margin-bottom:6px; }
+  .dash-metric .metric-value { font-size:26px; font-weight:800; line-height:1; margin-bottom:4px; }
+  .dash-metric .metric-sub { font-size:12px; color:var(--f1-muted); }
+  .mini-list { display:flex; flex-direction:column; gap:10px; }
+  .mini-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 0; border-bottom:1px solid #1a1a1a; }
+  .mini-row:last-child { border-bottom:none; }
+  .mini-main { display:flex; align-items:center; gap:10px; min-width:0; }
+  .mini-rank { width:22px; color:var(--f1-muted); font-size:12px; font-weight:700; text-align:center; }
+  .mini-name { font-size:14px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .mini-sub { font-size:11px; color:var(--f1-muted); margin-top:2px; }
+  .mini-value { font-size:13px; font-weight:700; text-align:right; white-space:nowrap; }
+  .bar-wrap { flex:1; margin-left:10px; }
+  .bar-bg { height:8px; background:#1a1a1a; border-radius:999px; overflow:hidden; }
+  .bar-fill { height:100%; border-radius:999px; background:var(--f1-red); }
+  .insight-box { background:#0f0f0f; border:1px solid var(--f1-border); border-radius:10px; padding:1rem; }
+  .insight-title { font-size:11px; color:var(--f1-muted); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:8px; }
+  .insight-list { display:flex; flex-direction:column; gap:8px; font-size:13px; }
+  .insight-list div { display:flex; justify-content:space-between; gap:12px; }
+  .insight-list span:first-child { color:var(--f1-text); }
+  .insight-list span:last-child { color:var(--f1-muted); text-align:right; }
+  .dash-banner { display:none; margin-bottom:1.5rem; padding:14px 16px; border:1px solid rgba(255,210,0,0.18); border-radius:10px; background:linear-gradient(90deg, rgba(255,210,0,0.08), rgba(255,210,0,0.02)); }
+  .dash-banner-inner { display:flex; flex-wrap:wrap; gap:10px 12px; align-items:center; }
+  .dash-chip { display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:999px; border:1px solid var(--f1-border); background:#111; font-size:11px; color:var(--f1-muted); }
+
+  .info-list { display:flex; flex-direction:column; gap:8px; font-size:13px; margin-top:8px; }
+  .info-list div { display:flex; justify-content:space-between; gap:12px; padding:4px 0; border-bottom:1px solid #1a1a1a; }
+  .info-list div:last-child { border-bottom:none; }
+  .info-list span:first-child { color:var(--f1-muted); }
+  .info-list span:last-child { color:var(--f1-text); font-weight:600; text-align:right; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">
+    <div class="logo-icon"></div>
+    <div>
+      <div class="logo-text">F1 Intelligence</div>
+      <div class="logo-sub">Race Analytics Platform</div>
+    </div>
+  </div>
+  <div class="nav">
+    <button class="nav-btn active" onclick="showPage('dashboard', this)">Dashboard</button>
+    <button class="nav-btn" onclick="showPage('predictions', this)">Predictions</button>
+    <button class="nav-btn" onclick="showPage('standings', this)">Championship</button>
+    <button class="nav-btn" onclick="showPage('schedule', this)">Schedule</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- DASHBOARD PAGE -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="content">
+<div id="page-dashboard" class="page active">
+
+  <div id="dashboard-kpis" class="dashboard-kpis"></div>
+
+  <div id="dashboard-sprint-banner" class="dash-banner">
+    <div class="dash-banner-inner" id="dashboard-sprint-inner"></div>
+  </div>
+
+  <div class="grid-2" style="margin-bottom:1.5rem">
+    <div class="card">
+      <div class="card-title" id="latest-race-title">Latest Race Recap</div>
+      <div id="latest-race-dashboard"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Drivers' Championship — Top 8</div>
+      <div id="champ-bars"></div>
+    </div>
+  </div>
+
+  <div class="grid-3" style="margin-bottom:1.5rem">
+    <div class="card">
+      <div class="card-title">Constructors' Battle</div>
+      <div id="constructor-bars"></div>
+    </div>
+
+
+    <div class="card">
+      <div class="card-title">Next Weekend</div>
+      <div id="upcoming-weekend"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">2026 Race History</div>
+    <div id="race-history" class="grid-4" style="gap:12px;margin-bottom:0"></div>
+  </div>
+
+</div>
+<!-- ═══════════════════════════════════════════ -->
+<!-- PREDICTIONS PAGE -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="page-predictions" class="page">
+
+  <!-- Step 1: Circuit selector -->
+  <div class="card" style="margin-bottom:1.5rem">
+    <div class="card-title">Qualifying &amp; Race Prediction Engine — XGBoost</div>
+    <div style="display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap">
+      <div>
+        <div class="stat-label" style="margin-bottom:4px">Select Circuit</div>
+        <select id="pred-circuit" onchange="runFullPrediction()" style="min-width:240px">
+          <option value="Monaco" selected>🇲🇨 Monaco — Monaco GP</option>
+          <option value="Barcelona">🇪🇸 Barcelona — Barcelona-Catalunya GP</option>
+          <option value="Red Bull Ring">🇦🇹 Red Bull Ring — Austrian GP</option>
+          <option value="Silverstone">🇬🇧 Silverstone — British GP</option>
+          <option value="Spa-Francorchamps">🇧🇪 Spa — Belgian GP</option>
+          <option value="Hungaroring">🇭🇺 Hungaroring — Hungarian GP</option>
+          <option value="Zandvoort">🇳🇱 Zandvoort — Dutch GP</option>
+          <option value="Monza">🇮🇹 Monza — Italian GP</option>
+          <option value="Baku">🇦🇿 Baku — Azerbaijan GP</option>
+          <option value="Marina Bay">🇸🇬 Marina Bay — Singapore GP</option>
+          <option value="Austin">🇺🇸 Austin COTA — US GP</option>
+          <option value="Mexico City">🇲🇽 Mexico City GP</option>
+          <option value="Interlagos">🇧🇷 Interlagos — São Paulo GP</option>
+          <option value="Las Vegas">🇺🇸 Las Vegas GP</option>
+          <option value="Lusail">🇶🇦 Lusail — Qatar GP</option>
+          <option value="Yas Marina">🇦🇪 Yas Marina — Abu Dhabi GP</option>
+          <option value="Albert Park">🇦🇺 Albert Park — Australian GP</option>
+          <option value="Shanghai">🇨🇳 Shanghai — Chinese GP</option>
+          <option value="Suzuka">🇯🇵 Suzuka — Japanese GP</option>
+          <option value="Miami">🇺🇸 Miami GP</option>
+        </select>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 14px;background:#1a1a1a;border-radius:6px;border:1px solid var(--f1-border)">
+        <span style="font-size:11px;color:var(--f1-muted);letter-spacing:1px;text-transform:uppercase">Model</span>
+        <span style="font-size:12px;font-weight:700;color:#4CAF50">XGBoost</span>
+        <span style="font-size:10px;color:#4CAF50">✓ Pos accuracy: 13.2% exact · 35.6% within ±1 · 67.1% within ±3 · MAE 3.07 · Win AUC 0.930</span>
+      </div>
+      <button class="btn" onclick="runFullPrediction()">⚡ Simulate Qualifying + Race</button>
+    </div>
+  </div>
+
+  <div id="sprint-status-banner" class="card" style="margin-bottom:1.5rem;display:none">
+    <div class="card-title">Sprint Weekend Detected</div>
+    <div id="sprint-status-inner" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"></div>
+  </div>
+
+  <!-- Step 2: Q1 / Q2 / Q3 breakdown -->
+  <div class="card" style="margin-bottom:1.5rem">
+    <div class="card-title" id="quali-title">Qualifying Simulation</div>
+    <div class="tab-row">
+      <div class="tab active" id="tab-q1" onclick="showQualiSession('Q1',this)">Q1 — All 22</div>
+      <div class="tab" id="tab-q2" onclick="showQualiSession('Q2',this)">Q2 — Top 15</div>
+      <div class="tab" id="tab-q3" onclick="showQualiSession('Q3',this)">Q3 — Pole Battle</div>
+    </div>
+    <div id="quali-content" style="min-height:120px;color:var(--f1-muted);font-size:13px;padding:1rem 0">
+      Select a circuit and click Simulate to run qualifying.
+    </div>
+  </div>
+
+  <!-- Step 3: Full grid race prediction derived from quali results -->
+  <div class="card">
+    <div class="card-title" id="full-grid-title">Full Grid Race Prediction — 2026</div>
+    <div style="font-size:11px;color:var(--f1-muted);margin-bottom:1rem" id="grid-subtitle">Grid positions derived from qualifying simulation. Race probabilities computed by XGBoost model.</div>
+    <div id="full-grid-prediction" style="color:var(--f1-muted);font-size:13px">Run qualifying simulation to generate race grid predictions.</div>
+  </div>
+
+</div>
+
+  <div class="card" id="sprint-weekend-section" style="margin-top:1.5rem;display:none">
+    <div class="card-title">Sprint Weekend Prediction</div>
+    <div id="sprint-weekend-inner"></div>
+  </div>
+
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- CHAMPIONSHIP PAGE -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="page-standings" class="page">
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Drivers' Championship — 2026</div>
+      <div id="drivers-champ"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Constructors' Championship — 2026</div>
+      <div id="constructors-champ"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SCHEDULE PAGE -->
+<!-- ═══════════════════════════════════════════ -->
+<div id="page-schedule" class="page">
+  <div class="card">
+    <div class="card-title">2026 F1 World Championship Calendar</div>
+    <div id="schedule-grid"></div>
+  </div>
+</div>
+
+</div><!-- end content -->
+
+<script>
+const TEAM_COLORS = {
+  'Mercedes':'#00CACA','Ferrari':'#FF0000','McLaren':'#FF8000',
+  'Red Bull':'#3671C6','Alpine':'#FF69B4','Haas':'#B6BABD',
+  'RB':'#6692FF','Williams':'#00A3E0','Aston Martin':'#358C75',
+  'Audi':'#BB9B5B','Cadillac':'#7F7F7F'
+};
+
+const DRIVERS_2026 = [
+  {code:'ANT',name:'Antonelli',team:'Mercedes',pts:131,wins:4,podiums:5},
+  {code:'RUS',name:'Russell',team:'Mercedes',pts:88,wins:1,podiums:2},
+  {code:'LEC',name:'Leclerc',team:'Ferrari',pts:75,wins:0,podiums:2},
+  {code:'HAM',name:'Hamilton',team:'Ferrari',pts:72,wins:0,podiums:2},
+  {code:'NOR',name:'Norris',team:'McLaren',pts:58,wins:1,podiums:3},
+  {code:'PIA',name:'Piastri',team:'McLaren',pts:48,wins:0,podiums:2},
+  {code:'VER',name:'Verstappen',team:'Red Bull',pts:43,wins:1,podiums:4},
+  {code:'GAS',name:'Gasly',team:'Alpine',pts:20,wins:0,podiums:4},
+  {code:'BEA',name:'Bearman',team:'Haas',pts:18,wins:0,podiums:3},
+  {code:'LAW',name:'Lawson',team:'RB',pts:16,wins:0,podiums:3},
+  {code:'COL',name:'Colapinto',team:'Alpine',pts:15,wins:0,podiums:0},
+  {code:'HAD',name:'Hadjar',team:'Red Bull',pts:14,wins:0,podiums:0},
+  {code:'SAI',name:'Sainz',team:'Williams',pts:6,wins:0,podiums:0},
+  {code:'LIN',name:'Lindblad',team:'RB',pts:5,wins:0,podiums:0},
+  {code:'BOR',name:'Bortoleto',team:'Audi',pts:2,wins:0,podiums:0},
+  {code:'OCO',name:'Ocon',team:'Haas',pts:1,wins:0,podiums:0},
+  {code:'ALB',name:'Albon',team:'Williams',pts:1,wins:0,podiums:0},
+  {code:'HUL',name:'Hülkenberg',team:'Audi',pts:0,wins:0,podiums:0},
+  {code:'BOT',name:'Bottas',team:'Cadillac',pts:0,wins:0,podiums:0},
+  {code:'PER',name:'Pérez',team:'Cadillac',pts:0,wins:0,podiums:0},
+  {code:'STR',name:'Stroll',team:'Aston Martin',pts:0,wins:0,podiums:0},
+  {code:'ALO',name:'Alonso',team:'Aston Martin',pts:0,wins:0,podiums:0},
+];
+
+const CONSTRUCTORS_2026 = [
+  {name:'Mercedes',pts:219,wins:5,podiums:7},
+  {name:'Ferrari',pts:147,wins:1,podiums:5},
+  {name:'McLaren',pts:106,wins:1,podiums:5},
+  {name:'Red Bull',pts:57,wins:1,podiums:4},
+  {name:'Alpine',pts:35,wins:0,podiums:4},
+  {name:'Haas',pts:19,wins:0,podiums:3},
+  {name:'RB',pts:21,wins:0,podiums:3},
+  {name:'Williams',pts:7,wins:0,podiums:0},
+  {name:'Audi',pts:2,wins:0,podiums:0},
+  {name:'Cadillac',pts:0,wins:0,podiums:0},
+  {name:'Aston Martin',pts:0,wins:0,podiums:0},
+];
+
+const RACE_RESULTS = {
+  1:[
+    {d:'RUS',t:'Mercedes',g:1,f:1,p:25},{d:'ANT',t:'Mercedes',g:2,f:2,p:18},{d:'LEC',t:'Ferrari',g:4,f:3,p:15},
+    {d:'HAM',t:'Ferrari',g:7,f:4,p:12},{d:'NOR',t:'McLaren',g:6,f:5,p:10},{d:'VER',t:'Red Bull',g:20,f:6,p:8},
+  ],
+  2:[
+    {d:'ANT',t:'Mercedes',g:1,f:1,p:25},{d:'RUS',t:'Mercedes',g:2,f:2,p:18},{d:'HAM',t:'Ferrari',g:3,f:3,p:15},
+    {d:'LEC',t:'Ferrari',g:4,f:4,p:12},{d:'BEA',t:'Haas',g:10,f:5,p:10},{d:'GAS',t:'Alpine',g:7,f:6,p:8},
+  ],
+  3:[
+    {d:'ANT',t:'Mercedes',g:1,f:1,p:25},{d:'PIA',t:'McLaren',g:3,f:2,p:18},{d:'LEC',t:'Ferrari',g:4,f:3,p:15},
+    {d:'RUS',t:'Mercedes',g:2,f:4,p:12},{d:'NOR',t:'McLaren',g:5,f:5,p:10},{d:'HAM',t:'Ferrari',g:6,f:6,p:8},
+  ],
+  4:[
+    {d:'ANT',t:'Mercedes',g:1,f:1,p:25},{d:'NOR',t:'McLaren',g:4,f:2,p:18},{d:'PIA',t:'McLaren',g:7,f:3,p:15},
+    {d:'RUS',t:'Mercedes',g:5,f:4,p:12},{d:'VER',t:'Red Bull',g:2,f:5,p:10},{d:'LEC',t:'Ferrari',g:3,f:6,p:8},
+  ],
+  5:[
+    {d:'ANT',t:'Mercedes',g:2,f:1,p:25,fl:true},
+    {d:'HAM',t:'Ferrari',g:5,f:2,p:18},
+    {d:'VER',t:'Red Bull',g:6,f:3,p:15},
+    {d:'LEC',t:'Ferrari',g:8,f:4,p:12},
+    {d:'HAD',t:'Red Bull',g:7,f:5,p:10},
+    {d:'COL',t:'Alpine F1 Team',g:10,f:6,p:8},
+    {d:'LAW',t:'RB F1 Team',g:12,f:7,p:6},
+    {d:'GAS',t:'Alpine F1 Team',g:14,f:8,p:4},
+    {d:'SAI',t:'Williams',g:15,f:9,p:2},
+    {d:'BEA',t:'Haas F1 Team',g:16,f:10,p:1},
+    {d:'PIA',t:'McLaren',g:4,f:11,p:0},
+    {d:'HUL',t:'Audi',g:11,f:12,p:0},
+    {d:'BOR',t:'Audi',g:13,f:13,p:0},
+    {d:'OCO',t:'Haas F1 Team',g:17,f:14,p:0},
+    {d:'STR',t:'Aston Martin',g:22,f:15,p:0},
+    {d:'BOT',t:'Cadillac',g:21,f:16,p:0},
+    {d:'PER',t:'Cadillac',g:20,f:17,p:0},
+    {d:'NOR',t:'McLaren',g:3,f:18,p:0},
+    {d:'RUS',t:'Mercedes',g:1,f:19,p:0},
+    {d:'ALO',t:'Aston Martin',g:19,f:20,p:0},
+    {d:'ALB',t:'Williams',g:18,f:21,p:0},
+    {d:'LIN',t:'RB F1 Team',g:9,f:22,p:0},
+  ]
+};
+
+
+const SCHEDULE_2026 = [
+  { r: 1,  name: 'Australia',          date: '06 - 08 Mar',   circuit: 'Albert Park',      country: '🇦🇺', sprint: false, done: true,  winner: 'Russell' },
+  { r: 2,  name: 'China',              date: '13 - 15 Mar',   circuit: 'Shanghai',         country: '🇨🇳', sprint: false, done: true,  winner: 'Antonelli' },
+  { r: 3,  name: 'Japan',             date: '27 - 29 Mar',   circuit: 'Suzuka',           country: '🇯🇵', sprint: false, done: true,  winner: 'Antonelli' },
+  { r: 4,  name: 'Miami',             date: '01 - 03 May',   circuit: 'Miami',             country: '🇺🇸', sprint: false, done: true,  winner: 'Antonelli' },
+  { r: 5,  name: 'Canada',            date: '22 - 24 May',   circuit: 'Montreal',          country: '🇨🇦', sprint: false, done: true,  winner: 'Antonelli' },
+  { r: 6,  name: 'Monaco',            date: '05 - 07 Jun',   circuit: 'Monaco',            country: '🇲🇨', sprint: false, done: false, winner: '' },
+  { r: 7,  name: 'Barcelona-Catalunya',date: '12 - 14 Jun',   circuit: 'Barcelona',         country: '🇪🇸', sprint: false, done: false, winner: '' },
+  { r: 8,  name: 'Austria',           date: '26 - 28 Jun',   circuit: 'Red Bull Ring',     country: '🇦🇹', sprint: false, done: false, winner: '' },
+  { r: 9,  name: 'Great Britain',     date: '03 - 05 Jul',   circuit: 'Silverstone',       country: '🇬🇧', sprint: true,  done: false, winner: '' },
+  { r:10,  name: 'Belgium',           date: '17 - 19 Jul',   circuit: 'Spa-Francorchamps', country: '🇧🇪', sprint: false, done: false, winner: '' },
+  { r:11,  name: 'Hungary',           date: '24 - 26 Jul',   circuit: 'Hungaroring',      country: '🇭🇺', sprint: false, done: false, winner: '' },
+  { r:12,  name: 'Netherlands',       date: '21 - 23 Aug',   circuit: 'Zandvoort',         country: '🇳🇱', sprint: true,  done: false, winner: '' },
+  { r:13,  name: 'Italy',             date: '04 - 06 Sep',   circuit: 'Monza',             country: '🇮🇹', sprint: false, done: false, winner: '' },
+  { r:14,  name: 'Spain',             date: '11 - 13 Sep',   circuit: 'Barcelona',         country: '🇪🇸', sprint: false, done: false, winner: '' },
+  { r:15,  name: 'Azerbaijan',        date: '24 - 26 Sep',   circuit: 'Baku',              country: '🇦🇿', sprint: false, done: false, winner: '' },
+  { r:16,  name: 'Singapore',         date: '09 - 11 Oct',   circuit: 'Marina Bay',        country: '🇸🇬', sprint: true,  done: false, winner: '' },
+  { r:17,  name: 'United States',     date: '23 - 25 Oct',   circuit: 'Austin',            country: '🇺🇸', sprint: false, done: false, winner: '' },
+  { r:18,  name: 'Mexico',            date: '30 Oct - 01 Nov', circuit: 'Mexico City',      country: '🇲🇽', sprint: false, done: false, winner: '' },
+  { r:19,  name: 'Brazil',            date: '06 - 08 Nov',   circuit: 'Interlagos',        country: '🇧🇷', sprint: false, done: false, winner: '' },
+  { r:20,  name: 'Las Vegas',         date: '19 - 21 Nov',   circuit: 'Las Vegas',         country: '🇺🇸', sprint: false, done: false, winner: '' },
+  { r:21,  name: 'Qatar',             date: '27 - 29 Nov',   circuit: 'Lusail',            country: '🇶🇦', sprint: false, done: false, winner: '' },
+  { r:22,  name: 'Abu Dhabi',         date: '04 - 06 Dec',   circuit: 'Yas Marina',        country: '🇦🇪', sprint: false, done: false, winner: '' },
+];
+
+const CIRCUIT_DATA = {
+  'Albert Park':{sc:0.55,ot:6,temp:22,type:'street'},
+  'Shanghai':{sc:0.45,ot:5,temp:18,type:'permanent'},
+  'Suzuka':{sc:0.50,ot:7,temp:20,type:'permanent'},
+  'Miami':{sc:0.60,ot:5,temp:30,type:'street'},
+  'Imola':{sc:0.50,ot:7,temp:18,type:'permanent'},
+  'Monaco':{sc:0.80,ot:9,temp:20,type:'street'},
+  'Barcelona':{sc:0.40,ot:5,temp:26,type:'permanent'},
+  'Spain':{sc:0.40,ot:5,temp:26,type:'permanent'},
+  'Montreal':{sc:0.55,ot:5,temp:22,type:'street'},
+  'Red Bull Ring':{sc:0.45,ot:4,temp:24,type:'permanent'},
+  'Silverstone':{sc:0.45,ot:4,temp:18,type:'permanent'},
+  'Spa-Francorchamps':{sc:0.55,ot:4,temp:16,type:'permanent'},
+  'Hungaroring':{sc:0.50,ot:7,temp:30,type:'permanent'},
+  'Zandvoort':{sc:0.45,ot:7,temp:18,type:'permanent'},
+  'Monza':{sc:0.40,ot:3,temp:24,type:'permanent'},
+  'Baku':{sc:0.65,ot:5,temp:26,type:'street'},
+  'Singapore':{sc:0.75,ot:8,temp:32,type:'street'},
+  'Marina Bay':{sc:0.75,ot:8,temp:32,type:'street'},
+  'Austin':{sc:0.45,ot:5,temp:26,type:'permanent'},
+  'Mexico City':{sc:0.40,ot:5,temp:22,type:'permanent'},
+  'Interlagos':{sc:0.60,ot:5,temp:26,type:'permanent'},
+  'Las Vegas':{sc:0.50,ot:5,temp:15,type:'street'},
+  'Lusail':{sc:0.40,ot:5,temp:28,type:'permanent'},
+  'Yas Marina':{sc:0.35,ot:5,temp:30,type:'permanent'},
+};
+
+// F1 Intelligence Model v3
+// PACE_RATINGS_2026: from actual 2026 qualifying positions (4 races, ground truth)
+const MODEL_DATA = {"ANT":{"Albert Park":{"wavg_finish":2.121,"recent_avg":2.513,"wins":0,"podiums":1,"top5s":2,"top10s":2,"poles":0,"races":2,"dnf_rate":0.0,"avg_q_gap":0.73,"q_samples":2,"pos_gained":6.0,"pace_2026":0.9886},"Shanghai":{"wavg_finish":1.304,"recent_avg":2.282,"wins":1,"podiums":1,"top5s":1,"top10s":2,"poles":1,"races":2,"dnf_rate":0.0,"avg_q_gap":0.178,"q_samples":2,"pos_gained":1.0,"pace_2026":0.9886},"Suzuka":{"wavg_finish":1.304,"recent_avg":2.282,"wins":1,"podiums":1,"top5s":1,"top10s":2,"poles":1,"races":2,"dnf_rate":0.0,"avg_q_gap":0.22,"q_samples":2,"pos_gained":0.0,"pace_2026":0.9886},"Miami":{"wavg_finish":1.304,"recent_avg":2.282,"wins":1,"podiums":1,"top5s":1,"top10s":2,"poles":1,"races":2,"dnf_rate":0.0,"avg_q_gap":0.026,"q_samples":2,"pos_gained":-1.5,"pace_2026":0.9886},"Montreal":{"wavg_finish":1.8,"recent_avg":1.5,"wins":1,"podiums":2,"top5s":2,"top10s":2,"poles":0,"races":2,"dnf_rate":0.0,"avg_q_gap":0.492,"q_samples":2,"pos_gained":1.5,"pace_2026":0.9886},"Monaco":{"wavg_finish":18.0,"recent_avg":18.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.0,"avg_q_gap":1.926,"q_samples":1,"pos_gained":-3.0,"pace_2026":0.9886},"Barcelona":{"wavg_finish":18.0,"recent_avg":18.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.2,"avg_q_gap":0.565,"q_samples":1,"pos_gained":-12.0,"pace_2026":0.9886},"Red Bull Ring":{"wavg_finish":19.0,"recent_avg":19.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.2,"avg_q_gap":1.081,"q_samples":1,"pos_gained":-10.0,"pace_2026":0.9886},"Silverstone":{"wavg_finish":16.0,"recent_avg":16.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.2,"avg_q_gap":0.482,"q_samples":1,"pos_gained":-6.0,"pace_2026":0.9886},"Spa":{"wavg_finish":16.0,"recent_avg":16.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.0,"avg_q_gap":1.577,"q_samples":1,"pos_gained":3.0,"pace_2026":0.9886},"Hungaroring":{"wavg_finish":10.0,"recent_avg":10.0,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":1,"dnf_rate":0.0,"avg_q_gap":0.892,"q_samples":1,"pos_gained":5.0,"pace_2026":0.9886},"Zandvoort":{"wavg_finish":16.0,"recent_avg":16.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.0,"avg_q_gap":0.831,"q_samples":1,"pos_gained":-5.0,"pace_2026":0.9886},"Monza":{"wavg_finish":9.0,"recent_avg":9.0,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":1,"dnf_rate":0.0,"avg_q_gap":0.408,"q_samples":1,"pos_gained":-3.0,"pace_2026":0.9886},"Baku":{"wavg_finish":4.0,"recent_avg":4.0,"wins":0,"podiums":0,"top5s":1,"top10s":1,"poles":0,"races":1,"dnf_rate":0.0,"avg_q_gap":0.347,"q_samples":1,"pos_gained":0.0,"pace_2026":0.9886},"Marina Bay":{"wavg_finish":5.0,"recent_avg":5.0,"wins":0,"podiums":0,"top5s":1,"top10s":1,"poles":0,"races":1,"dnf_rate":0.0,"avg_q_gap":0.379,"q_samples":1,"pos_gained":-1.0,"pace_2026":0.9886},"Austin":{"wavg_finish":13.0,"recent_avg":13.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.0,"avg_q_gap":0.534,"q_samples":1,"pos_gained":-6.0,"pace_2026":0.9886},"Mexico City":{"wavg_finish":6.0,"recent_avg":6.0,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":1,"dnf_rate":0.0,"avg_q_gap":0.532,"q_samples":1,"pos_gained":0.0,"pace_2026":0.9886},"Interlagos":{"wavg_finish":2.0,"recent_avg":2.0,"wins":0,"podiums":1,"top5s":1,"top10s":1,"poles":0,"races":1,"dnf_rate":0.0,"avg_q_gap":0.174,"q_samples":1,"pos_gained":0.0,"pace_2026":0.9886},"Las Vegas":{"wavg_finish":3.0,"recent_avg":3.0,"wins":0,"podiums":1,"top5s":1,"top10s":1,"poles":0,"races":1,"dnf_rate":0.0,"avg_q_gap":8.38,"q_samples":1,"pos_gained":14.0,"pace_2026":0.9886},"Lusail":{"wavg_finish":5.0,"recent_avg":5.0,"wins":0,"podiums":0,"top5s":1,"top10s":1,"poles":0,"races":1,"dnf_rate":0.0,"avg_q_gap":0.459,"q_samples":1,"pos_gained":0.0,"pace_2026":0.9886},"Yas Marina":{"wavg_finish":15.0,"recent_avg":15.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.0,"avg_q_gap":0.687,"q_samples":1,"pos_gained":-1.0,"pace_2026":0.9886}},"RUS":{"Albert Park":{"wavg_finish":3.953,"recent_avg":3.667,"wins":1,"podiums":3,"top5s":3,"top10s":3,"poles":1,"races":6,"dnf_rate":0.2,"avg_q_gap":0.561,"q_samples":6,"pos_gained":-0.6,"pace_2026":0.9318},"Shanghai":{"wavg_finish":2.728,"recent_avg":2.768,"wins":0,"podiums":2,"top5s":2,"top10s":3,"poles":0,"races":4,"dnf_rate":0.0,"avg_q_gap":0.528,"q_samples":4,"pos_gained":0.5,"pace_2026":0.9318},"Suzuka":{"wavg_finish":4.99,"recent_avg":4.626,"wins":0,"podiums":0,"top5s":2,"top10s":5,"poles":0,"races":6,"dnf_rate":0.0,"avg_q_gap":0.738,"q_samples":6,"pos_gained":0.5,"pace_2026":0.9318},"Miami":{"wavg_finish":4.224,"recent_avg":4.364,"wins":0,"podiums":1,"top5s":4,"top10s":5,"poles":0,"races":5,"dnf_rate":0.0,"avg_q_gap":0.575,"q_samples":5,"pos_gained":2.2,"pace_2026":0.9318},"Montreal":{"wavg_finish":6.528,"recent_avg":5.955,"wins":1,"podiums":2,"top5s":3,"top10s":3,"poles":2,"races":5,"dnf_rate":0.111,"avg_q_gap":0.845,"q_samples":5,"pos_gained":1.0,"pace_2026":0.9318},"Monaco":{"wavg_finish":8.57,"recent_avg":7.727,"wins":0,"podiums":0,"top5s":3,"top10s":3,"poles":0,"races":6,"dnf_rate":0.0,"avg_q_gap":1.142,"q_samples":6,"pos_gained":2.0,"pace_2026":0.9318},"Barcelona":{"wavg_finish":6.573,"recent_avg":3.773,"wins":0,"podiums":2,"top5s":4,"top10s":4,"poles":0,"races":7,"dnf_rate":0.0,"avg_q_gap":0.991,"q_samples":7,"pos_gained":2.0,"pace_2026":0.9318},"Red Bull Ring":{"wavg_finish":8.6,"recent_avg":4.182,"wins":1,"podiums":1,"top5s":3,"top10s":4,"poles":0,"races":9,"dnf_rate":0.154,"avg_q_gap":0.994,"q_samples":7,"pos_gained":-2.86,"pace_2026":0.9318},"Silverstone":{"wavg_finish":13.451,"recent_avg":12.045,"wins":0,"podiums":0,"top5s":1,"top10s":2,"poles":1,"races":8,"dnf_rate":0.083,"avg_q_gap":0.671,"q_samples":7,"pos_gained":0.83,"pace_2026":0.9318},"Spa":{"wavg_finish":9.661,"recent_avg":10.0,"wins":0,"podiums":1,"top5s":3,"top10s":4,"poles":0,"races":7,"dnf_rate":0.091,"avg_q_gap":1.451,"q_samples":7,"pos_gained":0.6,"pace_2026":0.9318},"Hungaroring":{"wavg_finish":6.982,"recent_avg":5.273,"wins":0,"podiums":2,"top5s":2,"top10s":5,"poles":1,"races":7,"dnf_rate":0.0,"avg_q_gap":1.577,"q_samples":7,"pos_gained":3.14,"pace_2026":0.9318},"Zandvoort":{"wavg_finish":8.096,"recent_avg":7.909,"wins":0,"podiums":1,"top5s":2,"top10s":3,"poles":0,"races":5,"dnf_rate":0.111,"avg_q_gap":0.689,"q_samples":5,"pos_gained":-3.6,"pace_2026":0.9318},"Monza":{"wavg_finish":6.865,"recent_avg":5.636,"wins":0,"podiums":1,"top5s":3,"top10s":5,"poles":0,"races":7,"dnf_rate":0.0,"avg_q_gap":0.899,"q_samples":7,"pos_gained":0.57,"pace_2026":0.9318},"Baku":{"wavg_finish":6.108,"recent_avg":3.682,"wins":0,"podiums":3,"top5s":3,"top10s":4,"poles":0,"races":6,"dnf_rate":0.1,"avg_q_gap":1.12,"q_samples":6,"pos_gained":2.2,"pace_2026":0.9318},"Marina Bay":{"wavg_finish":7.817,"recent_avg":5.364,"wins":1,"podiums":1,"top5s":2,"top10s":2,"poles":1,"races":5,"dnf_rate":0.222,"avg_q_gap":1.138,"q_samples":5,"pos_gained":-7.0,"pace_2026":0.9318},"Austin":{"wavg_finish":7.361,"recent_avg":5.773,"wins":0,"podiums":0,"top5s":2,"top10s":4,"poles":0,"races":6,"dnf_rate":0.0,"avg_q_gap":0.92,"q_samples":6,"pos_gained":3.0,"pace_2026":0.9318},"Mexico City":{"wavg_finish":7.614,"recent_avg":6.136,"wins":0,"podiums":0,"top5s":2,"top10s":4,"poles":0,"races":6,"dnf_rate":0.0,"avg_q_gap":0.871,"q_samples":6,"pos_gained":0.0,"pace_2026":0.9318},"Interlagos":{"wavg_finish":7.671,"recent_avg":7.636,"wins":1,"podiums":1,"top5s":3,"top10s":3,"poles":1,"races":6,"dnf_rate":0.1,"avg_q_gap":0.661,"q_samples":6,"pos_gained":2.0,"pace_2026":0.9318},"Las Vegas":{"wavg_finish":3.045,"recent_avg":3.045,"wins":1,"podiums":2,"top5s":2,"top10s":3,"poles":1,"races":3,"dnf_rate":0.0,"avg_q_gap":0.483,"q_samples":3,"pos_gained":-1.0,"pace_2026":0.9318},"Lusail":{"wavg_finish":6.444,"recent_avg":4.909,"wins":0,"podiums":0,"top5s":2,"top10s":3,"poles":1,"races":4,"dnf_rate":0.0,"avg_q_gap":0.457,"q_samples":4,"pos_gained":-2.33,"pace_2026":0.9318},"Yas Marina":{"wavg_finish":7.713,"recent_avg":4.545,"wins":0,"podiums":1,"top5s":4,"top10s":4,"poles":0,"races":7,"dnf_rate":0.091,"avg_q_gap":1.074,"q_samples":7,"pos_gained":0.67,"pace_2026":0.9318}},"LEC":{"Albert Park":{"wavg_finish":4.652,"recent_avg":3.869,"wins":1,"podiums":3,"top5s":4,"top10s":5,"poles":1,"races":7,"dnf_rate":0.091,"avg_q_gap":0.747,"q_samples":7,"pos_gained":1.17,"pace_2026":0.875},"Shanghai":{"wavg_finish":5.976,"recent_avg":6.828,"wins":0,"podiums":0,"top5s":3,"top10s":3,"poles":0,"races":5,"dnf_rate":0.0,"avg_q_gap":0.575,"q_samples":5,"pos_gained":-2.2,"pace_2026":0.875},"Suzuka":{"wavg_finish":3.721,"recent_avg":3.343,"wins":0,"podiums":2,"top5s":5,"top10s":6,"poles":0,"races":7,"dnf_rate":0.091,"avg_q_gap":0.504,"q_samples":7,"pos_gained":0.0,"pace_2026":0.875},"Miami":{"wavg_finish":5.776,"recent_avg":5.778,"wins":0,"podiums":2,"top5s":2,"top10s":5,"poles":1,"races":5,"dnf_rate":0.0,"avg_q_gap":0.304,"q_samples":5,"pos_gained":-0.8,"pace_2026":0.875},"Montreal":{"wavg_finish":8.461,"recent_avg":9.545,"wins":0,"podiums":1,"top5s":4,"top10s":5,"poles":0,"races":6,"dnf_rate":0.1,"avg_q_gap":2.488,"q_samples":6,"pos_gained":5.2,"pace_2026":0.875},"Monaco":{"wavg_finish":6.696,"recent_avg":2.591,"wins":1,"podiums":2,"top5s":3,"top10s":4,"poles":3,"races":7,"dnf_rate":0.273,"avg_q_gap":0.303,"q_samples":7,"pos_gained":-0.75,"pace_2026":0.875},"Barcelona":{"wavg_finish":8.199,"recent_avg":5.455,"wins":0,"podiums":1,"top5s":4,"top10s":5,"poles":1,"races":8,"dnf_rate":0.083,"avg_q_gap":0.861,"q_samples":8,"pos_gained":2.67,"pace_2026":0.875},"Red Bull Ring":{"wavg_finish":5.929,"recent_avg":5.318,"wins":1,"podiums":5,"top5s":5,"top10s":8,"poles":1,"races":10,"dnf_rate":0.071,"avg_q_gap":0.534,"q_samples":8,"pos_gained":1.33,"pace_2026":0.875},"Silverstone":{"wavg_finish":9.557,"recent_avg":12.864,"wins":0,"podiums":3,"top5s":5,"top10s":6,"poles":0,"races":9,"dnf_rate":0.077,"avg_q_gap":0.709,"q_samples":8,"pos_gained":-1.25,"pace_2026":0.875},"Spa":{"wavg_finish":5.37,"recent_avg":3.0,"wins":1,"podiums":4,"top5s":4,"top10s":6,"poles":3,"races":8,"dnf_rate":0.083,"avg_q_gap":0.814,"q_samples":8,"pos_gained":0.71,"pace_2026":0.875},"Hungaroring":{"wavg_finish":7.436,"recent_avg":4.682,"wins":0,"podiums":0,"top5s":3,"top10s":5,"poles":1,"races":8,"dnf_rate":0.167,"avg_q_gap":0.679,"q_samples":8,"pos_gained":-1.67,"pace_2026":0.875},"Zandvoort":{"wavg_finish":11.61,"recent_avg":14.136,"wins":0,"podiums":2,"top5s":3,"top10s":3,"poles":0,"races":5,"dnf_rate":0.111,"avg_q_gap":0.86,"q_samples":5,"pos_gained":-2.75,"pace_2026":0.875},"Monza":{"wavg_finish":4.536,"recent_avg":3.045,"wins":2,"podiums":3,"top5s":6,"top10s":6,"poles":2,"races":8,"dnf_rate":0.083,"avg_q_gap":0.432,"q_samples":8,"pos_gained":0.86,"pace_2026":0.875},"Baku":{"wavg_finish":7.018,"recent_avg":5.409,"wins":0,"podiums":2,"top5s":4,"top10s":6,"poles":4,"races":7,"dnf_rate":0.091,"avg_q_gap":0.302,"q_samples":7,"pos_gained":0.83,"pace_2026":0.875},"Marina Bay":{"wavg_finish":4.796,"recent_avg":5.227,"wins":0,"podiums":2,"top5s":4,"top10s":6,"poles":2,"races":6,"dnf_rate":0.0,"avg_q_gap":0.45,"q_samples":6,"pos_gained":1.0,"pace_2026":0.875},"Austin":{"wavg_finish":6.292,"recent_avg":6.227,"wins":1,"podiums":3,"top5s":5,"top10s":5,"poles":1,"races":7,"dnf_rate":0.091,"avg_q_gap":0.376,"q_samples":7,"pos_gained":2.4,"pace_2026":0.875},"Mexico City":{"wavg_finish":3.56,"recent_avg":2.545,"wins":0,"podiums":3,"top5s":5,"top10s":7,"poles":2,"races":7,"dnf_rate":0.0,"avg_q_gap":0.425,"q_samples":7,"pos_gained":0.29,"pace_2026":0.875},"Interlagos":{"wavg_finish":12.327,"recent_avg":14.773,"wins":0,"podiums":0,"top5s":3,"top10s":4,"poles":0,"races":7,"dnf_rate":0.273,"avg_q_gap":0.537,"q_samples":7,"pos_gained":-2.83,"pace_2026":0.875},"Las Vegas":{"wavg_finish":3.545,"recent_avg":3.545,"wins":0,"podiums":1,"top5s":3,"top10s":3,"poles":1,"races":3,"dnf_rate":0.0,"avg_q_gap":1.031,"q_samples":3,"pos_gained":1.33,"pace_2026":0.875},"Lusail":{"wavg_finish":5.738,"recent_avg":5.409,"wins":0,"podiums":1,"top5s":2,"top10s":4,"poles":0,"races":4,"dnf_rate":0.0,"avg_q_gap":0.808,"q_samples":4,"pos_gained":2.67,"pace_2026":0.875},"Yas Marina":{"wavg_finish":4.586,"recent_avg":3.227,"wins":0,"podiums":4,"top5s":5,"top10s":7,"poles":0,"races":8,"dnf_rate":0.0,"avg_q_gap":0.574,"q_samples":8,"pos_gained":1.88,"pace_2026":0.875}},"HAM":{"Albert Park":{"wavg_finish":5.748,"recent_avg":7.475,"wins":0,"podiums":3,"top5s":5,"top10s":6,"poles":2,"races":7,"dnf_rate":0.091,"avg_q_gap":0.789,"q_samples":7,"pos_gained":0.17,"pace_2026":0.7955},"Shanghai":{"wavg_finish":5.283,"recent_avg":7.081,"wins":1,"podiums":2,"top5s":3,"top10s":4,"poles":0,"races":5,"dnf_rate":0.0,"avg_q_gap":0.617,"q_samples":5,"pos_gained":-0.8,"pace_2026":0.7955},"Suzuka":{"wavg_finish":6.055,"recent_avg":6.626,"wins":1,"podiums":2,"top5s":4,"top10s":7,"poles":1,"races":7,"dnf_rate":0.0,"avg_q_gap":0.699,"q_samples":7,"pos_gained":0.43,"pace_2026":0.7955},"Miami":{"wavg_finish":6.939,"recent_avg":7.061,"wins":0,"podiums":0,"top5s":0,"top10s":5,"poles":0,"races":5,"dnf_rate":0.0,"avg_q_gap":0.667,"q_samples":5,"pos_gained":2.4,"pace_2026":0.7955},"Montreal":{"wavg_finish":3.821,"recent_avg":3.5,"wins":1,"podiums":4,"top5s":6,"top10s":7,"poles":0,"races":7,"dnf_rate":0.0,"avg_q_gap":0.782,"q_samples":7,"pos_gained":1.0,"pace_2026":0.7955},"Monaco":{"wavg_finish":5.411,"recent_avg":5.409,"wins":1,"podiums":2,"top5s":4,"top10s":7,"poles":1,"races":7,"dnf_rate":0.0,"avg_q_gap":0.491,"q_samples":7,"pos_gained":0.43,"pace_2026":0.7955},"Barcelona":{"wavg_finish":3.348,"recent_avg":4.136,"wins":4,"podiums":6,"top5s":7,"top10s":8,"poles":3,"races":8,"dnf_rate":0.0,"avg_q_gap":0.401,"q_samples":8,"pos_gained":0.38,"pace_2026":0.7955},"Red Bull Ring":{"wavg_finish":4.862,"recent_avg":4.909,"wins":1,"podiums":3,"top5s":8,"top10s":9,"poles":1,"races":10,"dnf_rate":0.071,"avg_q_gap":0.441,"q_samples":8,"pos_gained":0.33,"pace_2026":0.7955},"Silverstone":{"wavg_finish":2.356,"recent_avg":2.818,"wins":4,"podiums":8,"top5s":9,"top10s":9,"poles":2,"races":9,"dnf_rate":0.0,"avg_q_gap":0.298,"q_samples":8,"pos_gained":1.0,"pace_2026":0.7955},"Spa":{"wavg_finish":5.47,"recent_avg":4.409,"wins":2,"podiums":5,"top5s":6,"top10s":7,"poles":2,"races":8,"dnf_rate":0.083,"avg_q_gap":0.903,"q_samples":8,"pos_gained":1.71,"pace_2026":0.7955},"Hungaroring":{"wavg_finish":5.039,"recent_avg":7.318,"wins":3,"podiums":6,"top5s":7,"top10s":7,"poles":4,"races":8,"dnf_rate":0.0,"avg_q_gap":0.473,"q_samples":8,"pos_gained":0.62,"pace_2026":0.7955},"Zandvoort":{"wavg_finish":10.562,"recent_avg":13.0,"wins":0,"podiums":1,"top5s":2,"top10s":4,"poles":0,"races":5,"dnf_rate":0.111,"avg_q_gap":2.198,"q_samples":5,"pos_gained":0.0,"pace_2026":0.7955},"Monza":{"wavg_finish":6.53,"recent_avg":5.682,"wins":1,"podiums":2,"top5s":4,"top10s":7,"poles":1,"races":8,"dnf_rate":0.083,"avg_q_gap":0.372,"q_samples":8,"pos_gained":2.29,"pace_2026":0.7955},"Baku":{"wavg_finish":7.256,"recent_avg":7.864,"wins":1,"podiums":2,"top5s":3,"top10s":6,"poles":0,"races":7,"dnf_rate":0.0,"avg_q_gap":0.77,"q_samples":7,"pos_gained":-2.14,"pace_2026":0.7955},"Marina Bay":{"wavg_finish":6.072,"recent_avg":6.227,"wins":1,"podiums":2,"top5s":3,"top10s":6,"poles":1,"races":6,"dnf_rate":0.0,"avg_q_gap":0.352,"q_samples":6,"pos_gained":-1.83,"pace_2026":0.7955},"Austin":{"wavg_finish":9.083,"recent_avg":12.727,"wins":0,"podiums":4,"top5s":5,"top10s":5,"poles":1,"races":7,"dnf_rate":0.091,"avg_q_gap":0.631,"q_samples":7,"pos_gained":0.6,"pace_2026":0.7955},"Mexico City":{"wavg_finish":4.25,"recent_avg":5.364,"wins":1,"podiums":4,"top5s":6,"top10s":7,"poles":0,"races":7,"dnf_rate":0.0,"avg_q_gap":0.389,"q_samples":7,"pos_gained":0.43,"pace_2026":0.7955},"Interlagos":{"wavg_finish":9.524,"recent_avg":13.182,"wins":2,"podiums":3,"top5s":3,"top10s":6,"poles":1,"races":7,"dnf_rate":0.091,"avg_q_gap":1.893,"q_samples":7,"pos_gained":0.14,"pace_2026":0.7955},"Las Vegas":{"wavg_finish":5.864,"recent_avg":5.864,"wins":0,"podiums":1,"top5s":1,"top10s":3,"poles":0,"races":3,"dnf_rate":0.0,"avg_q_gap":4.507,"q_samples":3,"pos_gained":7.33,"pace_2026":0.7955},"Lusail":{"wavg_finish":12.19,"recent_avg":13.818,"wins":1,"podiums":1,"top5s":1,"top10s":1,"poles":1,"races":4,"dnf_rate":0.125,"avg_q_gap":0.844,"q_samples":4,"pos_gained":-3.0,"pace_2026":0.7955},"Yas Marina":{"wavg_finish":6.729,"recent_avg":6.955,"wins":2,"podiums":4,"top5s":5,"top10s":7,"poles":2,"races":8,"dnf_rate":0.083,"avg_q_gap":0.819,"q_samples":8,"pos_gained":1.12,"pace_2026":0.7955}},"NOR":{"Albert Park":{"wavg_finish":4.649,"recent_avg":3.909,"wins":1,"podiums":2,"top5s":4,"top10s":5,"poles":1,"races":6,"dnf_rate":0.1,"avg_q_gap":0.738,"q_samples":6,"pos_gained":0.5,"pace_2026":0.8068},"Shanghai":{"wavg_finish":16.839,"recent_avg":13.818,"wins":0,"podiums":2,"top5s":2,"top10s":2,"poles":0,"races":4,"dnf_rate":0.375,"avg_q_gap":0.551,"q_samples":4,"pos_gained":-3.5,"pace_2026":0.8068},"Suzuka":{"wavg_finish":4.884,"recent_avg":4.394,"wins":0,"podiums":2,"top5s":4,"top10s":5,"poles":0,"races":6,"dnf_rate":0.1,"avg_q_gap":0.526,"q_samples":6,"pos_gained":-0.67,"pace_2026":0.8068},"Miami":{"wavg_finish":3.429,"recent_avg":1.859,"wins":1,"podiums":3,"top5s":3,"top10s":3,"poles":0,"races":5,"dnf_rate":0.222,"avg_q_gap":0.489,"q_samples":5,"pos_gained":1.25,"pace_2026":0.8068},"Montreal":{"wavg_finish":12.923,"recent_avg":11.773,"wins":0,"podiums":1,"top5s":1,"top10s":1,"poles":0,"races":5,"dnf_rate":0.333,"avg_q_gap":2.349,"q_samples":5,"pos_gained":-4.25,"pace_2026":0.8068},"Monaco":{"wavg_finish":4.525,"recent_avg":3.773,"wins":1,"podiums":2,"top5s":3,"top10s":5,"poles":1,"races":6,"dnf_rate":0.1,"avg_q_gap":0.407,"q_samples":6,"pos_gained":0.5,"pace_2026":0.8068},"Barcelona":{"wavg_finish":7.327,"recent_avg":5.409,"wins":0,"podiums":2,"top5s":2,"top10s":5,"poles":1,"races":7,"dnf_rate":0.182,"avg_q_gap":0.675,"q_samples":7,"pos_gained":-2.17,"pace_2026":0.8068},"Red Bull Ring":{"wavg_finish":6.47,"recent_avg":7.727,"wins":1,"podiums":3,"top5s":6,"top10s":8,"poles":1,"races":9,"dnf_rate":0.077,"avg_q_gap":0.413,"q_samples":7,"pos_gained":-1.67,"pace_2026":0.8068},"Silverstone":{"wavg_finish":3.821,"recent_avg":1.864,"wins":1,"podiums":3,"top5s":5,"top10s":7,"poles":0,"races":8,"dnf_rate":0.083,"avg_q_gap":0.655,"q_samples":7,"pos_gained":0.12,"pace_2026":0.8068},"Spa":{"wavg_finish":6.649,"recent_avg":4.091,"wins":0,"podiums":1,"top5s":2,"top10s":4,"poles":1,"races":7,"dnf_rate":0.182,"avg_q_gap":0.885,"q_samples":7,"pos_gained":1.0,"pace_2026":0.8068},"Hungaroring":{"wavg_finish":5.304,"recent_avg":1.545,"wins":1,"podiums":3,"top5s":3,"top10s":5,"poles":1,"races":7,"dnf_rate":0.182,"avg_q_gap":0.35,"q_samples":7,"pos_gained":-1.33,"pace_2026":0.8068},"Zandvoort":{"wavg_finish":9.658,"recent_avg":10.091,"wins":1,"podiums":1,"top5s":1,"top10s":4,"poles":1,"races":5,"dnf_rate":0.222,"avg_q_gap":0.369,"q_samples":5,"pos_gained":-3.6,"pace_2026":0.8068},"Monza":{"wavg_finish":4.38,"recent_avg":3.682,"wins":0,"podiums":3,"top5s":4,"top10s":7,"poles":1,"races":7,"dnf_rate":0.091,"avg_q_gap":0.495,"q_samples":7,"pos_gained":0.57,"pace_2026":0.8068},"Baku":{"wavg_finish":6.778,"recent_avg":6.5,"wins":0,"podiums":0,"top5s":2,"top10s":6,"poles":0,"races":6,"dnf_rate":0.1,"avg_q_gap":1.15,"q_samples":6,"pos_gained":2.33,"pace_2026":0.8068},"Marina Bay":{"wavg_finish":2.81,"recent_avg":2.136,"wins":1,"podiums":3,"top5s":4,"top10s":5,"poles":1,"races":5,"dnf_rate":0.111,"avg_q_gap":0.481,"q_samples":5,"pos_gained":1.6,"pace_2026":0.8068},"Austin":{"wavg_finish":3.937,"recent_avg":2.636,"wins":0,"podiums":2,"top5s":3,"top10s":6,"poles":1,"races":6,"dnf_rate":0.1,"avg_q_gap":0.467,"q_samples":6,"pos_gained":-0.5,"pace_2026":0.8068},"Mexico City":{"wavg_finish":5.222,"recent_avg":2.227,"wins":1,"podiums":2,"top5s":3,"top10s":5,"poles":1,"races":6,"dnf_rate":0.1,"avg_q_gap":1.164,"q_samples":6,"pos_gained":4.0,"pace_2026":0.8068},"Interlagos":{"wavg_finish":6.114,"recent_avg":2.818,"wins":1,"podiums":2,"top5s":2,"top10s":5,"poles":2,"races":6,"dnf_rate":0.2,"avg_q_gap":0.272,"q_samples":6,"pos_gained":-0.8,"pace_2026":0.8068},"Las Vegas":{"wavg_finish":15.091,"recent_avg":15.091,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":1,"races":3,"dnf_rate":0.286,"avg_q_gap":0.671,"q_samples":3,"pos_gained":-9.0,"pace_2026":0.8068},"Lusail":{"wavg_finish":6.103,"recent_avg":5.682,"wins":0,"podiums":1,"top5s":2,"top10s":4,"poles":0,"races":4,"dnf_rate":0.125,"avg_q_gap":0.408,"q_samples":4,"pos_gained":-1.67,"pace_2026":0.8068},"Yas Marina":{"wavg_finish":4.111,"recent_avg":2.818,"wins":1,"podiums":2,"top5s":4,"top10s":7,"poles":1,"races":7,"dnf_rate":0.091,"avg_q_gap":0.436,"q_samples":7,"pos_gained":-1.0,"pace_2026":0.8068}},"PIA":{"Albert Park":{"wavg_finish":18.12,"recent_avg":16.172,"wins":0,"podiums":0,"top5s":1,"top10s":3,"poles":0,"races":4,"dnf_rate":0.375,"avg_q_gap":0.741,"q_samples":4,"pos_gained":-3.5,"pace_2026":0.8182},"Shanghai":{"wavg_finish":16.876,"recent_avg":13.808,"wins":1,"podiums":1,"top5s":1,"top10s":2,"poles":1,"races":3,"dnf_rate":0.429,"avg_q_gap":0.366,"q_samples":3,"pos_gained":-5.67,"pace_2026":0.8182},"Suzuka":{"wavg_finish":2.54,"recent_avg":3.051,"wins":0,"podiums":3,"top5s":3,"top10s":4,"poles":0,"races":4,"dnf_rate":0.25,"avg_q_gap":0.341,"q_samples":4,"pos_gained":-0.5,"pace_2026":0.8182},"Miami":{"wavg_finish":4.232,"recent_avg":4.01,"wins":1,"podiums":2,"top5s":2,"top10s":2,"poles":0,"races":4,"dnf_rate":0.25,"avg_q_gap":0.542,"q_samples":4,"pos_gained":0.0,"pace_2026":0.8182},"Montreal":{"wavg_finish":5.909,"recent_avg":5.909,"wins":0,"podiums":0,"top5s":2,"top10s":2,"poles":0,"races":3,"dnf_rate":0.286,"avg_q_gap":0.428,"q_samples":3,"pos_gained":-1.67,"pace_2026":0.8182},"Monaco":{"wavg_finish":4.273,"recent_avg":4.273,"wins":0,"podiums":2,"top5s":2,"top10s":3,"poles":0,"races":3,"dnf_rate":0.286,"avg_q_gap":0.363,"q_samples":3,"pos_gained":0.33,"pace_2026":0.8182},"Barcelona":{"wavg_finish":5.636,"recent_avg":5.636,"wins":1,"podiums":1,"top5s":1,"top10s":2,"poles":1,"races":3,"dnf_rate":0.286,"avg_q_gap":0.379,"q_samples":3,"pos_gained":-0.67,"pace_2026":0.8182},"Red Bull Ring":{"wavg_finish":5.182,"recent_avg":5.182,"wins":0,"podiums":2,"top5s":2,"top10s":2,"poles":0,"races":3,"dnf_rate":0.286,"avg_q_gap":0.774,"q_samples":3,"pos_gained":1.0,"pace_2026":0.8182},"Silverstone":{"wavg_finish":3.091,"recent_avg":3.091,"wins":0,"podiums":1,"top5s":3,"top10s":3,"poles":0,"races":3,"dnf_rate":0.286,"avg_q_gap":0.264,"q_samples":3,"pos_gained":0.0,"pace_2026":0.8182},"Spa":{"wavg_finish":5.636,"recent_avg":5.636,"wins":1,"podiums":2,"top5s":2,"top10s":2,"poles":0,"races":3,"dnf_rate":0.429,"avg_q_gap":0.577,"q_samples":3,"pos_gained":2.0,"pace_2026":0.8182},"Hungaroring":{"wavg_finish":2.364,"recent_avg":2.364,"wins":1,"podiums":2,"top5s":3,"top10s":3,"poles":0,"races":3,"dnf_rate":0.286,"avg_q_gap":0.097,"q_samples":3,"pos_gained":0.0,"pace_2026":0.8182},"Zandvoort":{"wavg_finish":3.773,"recent_avg":3.773,"wins":1,"podiums":1,"top5s":2,"top10s":3,"poles":1,"races":3,"dnf_rate":0.286,"avg_q_gap":0.47,"q_samples":3,"pos_gained":-0.67,"pace_2026":0.8182},"Monza":{"wavg_finish":4.727,"recent_avg":4.727,"wins":0,"podiums":2,"top5s":2,"top10s":2,"poles":0,"races":3,"dnf_rate":0.286,"avg_q_gap":0.233,"q_samples":3,"pos_gained":-1.67,"pace_2026":0.8182},"Baku":{"wavg_finish":11.909,"recent_avg":11.909,"wins":1,"podiums":1,"top5s":1,"top10s":1,"poles":0,"races":3,"dnf_rate":0.429,"avg_q_gap":0.557,"q_samples":3,"pos_gained":-3.67,"pace_2026":0.8182},"Marina Bay":{"wavg_finish":4.364,"recent_avg":4.364,"wins":0,"podiums":1,"top5s":2,"top10s":3,"poles":0,"races":3,"dnf_rate":0.286,"avg_q_gap":0.639,"q_samples":3,"pos_gained":3.67,"pace_2026":0.8182},"Austin":{"wavg_finish":8.409,"recent_avg":8.409,"wins":0,"podiums":0,"top5s":2,"top10s":2,"poles":0,"races":3,"dnf_rate":0.429,"avg_q_gap":0.627,"q_samples":3,"pos_gained":0.5,"pace_2026":0.8182},"Mexico City":{"wavg_finish":6.636,"recent_avg":6.636,"wins":0,"podiums":0,"top5s":1,"top10s":3,"poles":0,"races":3,"dnf_rate":0.286,"avg_q_gap":0.896,"q_samples":3,"pos_gained":3.33,"pace_2026":0.8182},"Interlagos":{"wavg_finish":8.0,"recent_avg":8.0,"wins":0,"podiums":0,"top5s":1,"top10s":2,"poles":0,"races":3,"dnf_rate":0.286,"avg_q_gap":0.625,"q_samples":3,"pos_gained":-1.67,"pace_2026":0.8182},"Las Vegas":{"wavg_finish":13.591,"recent_avg":13.591,"wins":0,"podiums":0,"top5s":0,"top10s":2,"poles":0,"races":3,"dnf_rate":0.286,"avg_q_gap":1.176,"q_samples":3,"pos_gained":-2.0,"pace_2026":0.8182},"Lusail":{"wavg_finish":2.318,"recent_avg":2.318,"wins":0,"podiums":3,"top5s":3,"top10s":3,"poles":0,"races":3,"dnf_rate":0.286,"avg_q_gap":0.272,"q_samples":3,"pos_gained":2.5,"pace_2026":0.8182},"Yas Marina":{"wavg_finish":5.455,"recent_avg":5.455,"wins":0,"podiums":1,"top5s":1,"top10s":3,"poles":0,"races":3,"dnf_rate":0.286,"avg_q_gap":0.248,"q_samples":3,"pos_gained":-3.33,"pace_2026":0.8182}},"VER":{"Albert Park":{"wavg_finish":6.933,"recent_avg":7.172,"wins":1,"podiums":3,"top5s":3,"top10s":5,"poles":2,"races":7,"dnf_rate":0.273,"avg_q_gap":0.277,"q_samples":6,"pos_gained":2.8,"pace_2026":0.7273},"Shanghai":{"wavg_finish":12.84,"recent_avg":11.455,"wins":1,"podiums":1,"top5s":4,"top10s":4,"poles":1,"races":5,"dnf_rate":0.222,"avg_q_gap":0.521,"q_samples":5,"pos_gained":-1.4,"pace_2026":0.7273},"Suzuka":{"wavg_finish":6.138,"recent_avg":5.596,"wins":4,"podiums":5,"top5s":5,"top10s":6,"poles":4,"races":7,"dnf_rate":0.182,"avg_q_gap":0.599,"q_samples":7,"pos_gained":0.5,"pace_2026":0.7273},"Miami":{"wavg_finish":4.316,"recent_avg":4.374,"wins":2,"podiums":3,"top5s":5,"top10s":5,"poles":2,"races":5,"dnf_rate":0.111,"avg_q_gap":0.082,"q_samples":5,"pos_gained":0.6,"pace_2026":0.7273},"Montreal":{"wavg_finish":1.804,"recent_avg":1.636,"wins":3,"podiums":6,"top5s":7,"top10s":7,"poles":2,"races":7,"dnf_rate":0.086,"avg_q_gap":0.293,"q_samples":7,"pos_gained":1.0,"pace_2026":0.7273},"Monaco":{"wavg_finish":3.863,"recent_avg":3.955,"wins":2,"podiums":3,"top5s":5,"top10s":7,"poles":1,"races":7,"dnf_rate":0.091,"avg_q_gap":0.386,"q_samples":6,"pos_gained":1.71,"pace_2026":0.7273},"Barcelona":{"wavg_finish":3.89,"recent_avg":5.091,"wins":3,"podiums":7,"top5s":7,"top10s":8,"poles":1,"races":8,"dnf_rate":0.083,"avg_q_gap":0.276,"q_samples":8,"pos_gained":-0.12,"pace_2026":0.7273},"Red Bull Ring":{"wavg_finish":7.11,"recent_avg":10.0,"wins":5,"podiums":7,"top5s":8,"top10s":8,"poles":5,"races":10,"dnf_rate":0.143,"avg_q_gap":0.346,"q_samples":8,"pos_gained":-1.44,"pace_2026":0.7273},"Silverstone":{"wavg_finish":5.691,"recent_avg":3.136,"wins":2,"podiums":4,"top5s":6,"top10s":7,"poles":3,"races":9,"dnf_rate":0.231,"avg_q_gap":0.215,"q_samples":8,"pos_gained":-0.57,"pace_2026":0.7273},"Spa":{"wavg_finish":3.923,"recent_avg":3.318,"wins":3,"podiums":5,"top5s":7,"top10s":7,"poles":1,"races":8,"dnf_rate":0.167,"avg_q_gap":0.315,"q_samples":8,"pos_gained":4.14,"pace_2026":0.7273},"Hungaroring":{"wavg_finish":5.878,"recent_avg":5.909,"wins":2,"podiums":4,"top5s":5,"top10s":7,"poles":1,"races":8,"dnf_rate":0.083,"avg_q_gap":0.363,"q_samples":8,"pos_gained":0.71,"pace_2026":0.7273},"Zandvoort":{"wavg_finish":1.582,"recent_avg":1.773,"wins":3,"podiums":5,"top5s":5,"top10s":5,"poles":3,"races":5,"dnf_rate":0.111,"avg_q_gap":0.175,"q_samples":5,"pos_gained":0.2,"pace_2026":0.7273},"Monza":{"wavg_finish":5.696,"recent_avg":2.591,"wins":3,"podiums":3,"top5s":4,"top10s":6,"poles":2,"races":8,"dnf_rate":0.25,"avg_q_gap":0.268,"q_samples":7,"pos_gained":3.17,"pace_2026":0.7273},"Baku":{"wavg_finish":5.137,"recent_avg":2.5,"wins":2,"podiums":3,"top5s":5,"top10s":5,"poles":1,"races":7,"dnf_rate":0.273,"avg_q_gap":0.31,"q_samples":7,"pos_gained":0.6,"pace_2026":0.7273},"Marina Bay":{"wavg_finish":3.23,"recent_avg":2.682,"wins":0,"podiums":4,"top5s":5,"top10s":6,"poles":0,"races":6,"dnf_rate":0.1,"avg_q_gap":0.62,"q_samples":6,"pos_gained":1.33,"pace_2026":0.7273},"Austin":{"wavg_finish":1.619,"recent_avg":1.636,"wins":4,"podiums":7,"top5s":7,"top10s":7,"poles":2,"races":7,"dnf_rate":0.091,"avg_q_gap":0.215,"q_samples":7,"pos_gained":3.0,"pace_2026":0.7273},"Mexico City":{"wavg_finish":2.994,"recent_avg":3.5,"wins":4,"podiums":5,"top5s":5,"top10s":7,"poles":1,"races":7,"dnf_rate":0.091,"avg_q_gap":0.24,"q_samples":7,"pos_gained":0.14,"pace_2026":0.7273},"Interlagos":{"wavg_finish":2.345,"recent_avg":1.909,"wins":3,"podiums":6,"top5s":6,"top10s":7,"poles":2,"races":7,"dnf_rate":0.091,"avg_q_gap":1.267,"q_samples":7,"pos_gained":4.57,"pace_2026":0.7273},"Las Vegas":{"wavg_finish":2.273,"recent_avg":2.273,"wins":2,"podiums":2,"top5s":3,"top10s":3,"poles":0,"races":3,"dnf_rate":0.143,"avg_q_gap":0.387,"q_samples":3,"pos_gained":0.67,"pace_2026":0.7273},"Lusail":{"wavg_finish":1.127,"recent_avg":1.0,"wins":3,"podiums":4,"top5s":4,"top10s":4,"poles":1,"races":4,"dnf_rate":0.125,"avg_q_gap":0.163,"q_samples":4,"pos_gained":2.0,"pace_2026":0.7273},"Yas Marina":{"wavg_finish":2.144,"recent_avg":2.591,"wins":5,"podiums":7,"top5s":7,"top10s":8,"poles":5,"races":8,"dnf_rate":0.083,"avg_q_gap":0.135,"q_samples":8,"pos_gained":0.12,"pace_2026":0.7273}},"HAD":{"Albert Park":{"wavg_finish":20.0,"recent_avg":20.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":2,"dnf_rate":0.667,"avg_q_gap":0.898,"q_samples":2,"pos_gained":-13.0,"pace_2026":0.7159},"Shanghai":{"wavg_finish":8.182,"recent_avg":8.769,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":2,"dnf_rate":0.333,"avg_q_gap":0.819,"q_samples":2,"pos_gained":-1.5,"pace_2026":0.7159},"Suzuka":{"wavg_finish":11.757,"recent_avg":10.974,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":2,"dnf_rate":0.333,"avg_q_gap":0.964,"q_samples":2,"pos_gained":-2.5,"pace_2026":0.7159},"Miami":{"wavg_finish":21.332,"recent_avg":19.179,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":2,"dnf_rate":0.5,"avg_q_gap":0.911,"q_samples":2,"pos_gained":0.0,"pace_2026":0.7159},"Montreal":{"wavg_finish":16.0,"recent_avg":16.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.4,"avg_q_gap":0.968,"q_samples":1,"pos_gained":-4.0,"pace_2026":0.7159},"Monaco":{"wavg_finish":6.0,"recent_avg":6.0,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":1,"dnf_rate":0.4,"avg_q_gap":0.969,"q_samples":1,"pos_gained":-1.0,"pace_2026":0.7159},"Barcelona":{"wavg_finish":7.0,"recent_avg":7.0,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":1,"dnf_rate":0.4,"avg_q_gap":0.706,"q_samples":1,"pos_gained":2.0,"pace_2026":0.7159},"Red Bull Ring":{"wavg_finish":12.0,"recent_avg":12.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.4,"avg_q_gap":1.092,"q_samples":1,"pos_gained":1.0,"pace_2026":0.7159},"Silverstone":{"wavg_finish":17.0,"recent_avg":17.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.6,"avg_q_gap":0.972,"q_samples":1,"pos_gained":-5.0,"pace_2026":0.7159},"Spa":{"wavg_finish":20.0,"recent_avg":20.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.4,"avg_q_gap":0.719,"q_samples":1,"pos_gained":-12.0,"pace_2026":0.7159},"Hungaroring":{"wavg_finish":11.0,"recent_avg":11.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.4,"avg_q_gap":0.579,"q_samples":1,"pos_gained":-1.0,"pace_2026":0.7159},"Zandvoort":{"wavg_finish":3.0,"recent_avg":3.0,"wins":0,"podiums":1,"top5s":1,"top10s":1,"poles":0,"races":1,"dnf_rate":0.4,"avg_q_gap":0.546,"q_samples":1,"pos_gained":1.0,"pace_2026":0.7159},"Monza":{"wavg_finish":10.0,"recent_avg":10.0,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":1,"dnf_rate":0.4,"avg_q_gap":1.125,"q_samples":1,"pos_gained":9.0,"pace_2026":0.7159},"Baku":{"wavg_finish":10.0,"recent_avg":10.0,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":1,"dnf_rate":0.4,"avg_q_gap":0.53,"q_samples":1,"pos_gained":-2.0,"pace_2026":0.7159},"Marina Bay":{"wavg_finish":11.0,"recent_avg":11.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.4,"avg_q_gap":0.688,"q_samples":1,"pos_gained":-3.0,"pace_2026":0.7159},"Austin":{"wavg_finish":16.0,"recent_avg":16.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.4,"avg_q_gap":0.994,"q_samples":0,"pos_gained":4.0,"pace_2026":0.7159},"Mexico City":{"wavg_finish":13.0,"recent_avg":13.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.4,"avg_q_gap":0.666,"q_samples":1,"pos_gained":-5.0,"pace_2026":0.7159},"Interlagos":{"wavg_finish":8.0,"recent_avg":8.0,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":1,"dnf_rate":0.4,"avg_q_gap":0.42,"q_samples":1,"pos_gained":-3.0,"pace_2026":0.7159},"Las Vegas":{"wavg_finish":6.0,"recent_avg":6.0,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":1,"dnf_rate":0.4,"avg_q_gap":1.62,"q_samples":1,"pos_gained":2.0,"pace_2026":0.7159},"Lusail":{"wavg_finish":18.0,"recent_avg":18.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.4,"avg_q_gap":0.727,"q_samples":1,"pos_gained":0.0,"pace_2026":0.7159},"Yas Marina":{"wavg_finish":17.0,"recent_avg":17.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.4,"avg_q_gap":0.79,"q_samples":1,"pos_gained":-8.0,"pace_2026":0.7159}},"BEA":{"Albert Park":{"wavg_finish":7.425,"recent_avg":8.795,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":2,"dnf_rate":0.167,"avg_q_gap":1.793,"q_samples":1,"pos_gained":5.5,"pace_2026":0.4545},"Shanghai":{"wavg_finish":5.182,"recent_avg":5.769,"wins":0,"podiums":0,"top5s":1,"top10s":2,"poles":0,"races":2,"dnf_rate":0.167,"avg_q_gap":1.227,"q_samples":2,"pos_gained":7.0,"pace_2026":0.4545},"Suzuka":{"wavg_finish":21.271,"recent_avg":18.923,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":2,"dnf_rate":0.333,"avg_q_gap":1.703,"q_samples":2,"pos_gained":-2.0,"pace_2026":0.4545},"Miami":{"wavg_finish":11.486,"recent_avg":13.051,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":2,"dnf_rate":0.333,"avg_q_gap":1.639,"q_samples":2,"pos_gained":0.5,"pace_2026":0.4545},"Montreal":{"wavg_finish":11.0,"recent_avg":11.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.2,"avg_q_gap":1.407,"q_samples":1,"pos_gained":2.0,"pace_2026":0.4545},"Monaco":{"wavg_finish":12.0,"recent_avg":12.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.2,"avg_q_gap":2.025,"q_samples":1,"pos_gained":8.0,"pace_2026":0.4545},"Barcelona":{"wavg_finish":17.0,"recent_avg":17.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.2,"avg_q_gap":1.528,"q_samples":1,"pos_gained":-3.0,"pace_2026":0.4545},"Red Bull Ring":{"wavg_finish":11.0,"recent_avg":11.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.2,"avg_q_gap":1.247,"q_samples":1,"pos_gained":4.0,"pace_2026":0.4545},"Silverstone":{"wavg_finish":11.0,"recent_avg":11.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.2,"avg_q_gap":0.579,"q_samples":1,"pos_gained":7.0,"pace_2026":0.4545},"Spa":{"wavg_finish":11.0,"recent_avg":11.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.2,"avg_q_gap":1.055,"q_samples":1,"pos_gained":1.0,"pace_2026":0.4545},"Hungaroring":{"wavg_finish":20.0,"recent_avg":20.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.2,"avg_q_gap":0.804,"q_samples":1,"pos_gained":-9.0,"pace_2026":0.4545},"Zandvoort":{"wavg_finish":6.0,"recent_avg":6.0,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":1,"dnf_rate":0.2,"avg_q_gap":1.6,"q_samples":1,"pos_gained":14.0,"pace_2026":0.4545},"Monza":{"wavg_finish":12.0,"recent_avg":12.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.2,"avg_q_gap":0.654,"q_samples":1,"pos_gained":-1.0,"pace_2026":0.4545},"Baku":{"wavg_finish":11.176,"recent_avg":11.176,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":2,"dnf_rate":0.167,"avg_q_gap":1.571,"q_samples":2,"pos_gained":1.5,"pace_2026":0.4545},"Marina Bay":{"wavg_finish":9.0,"recent_avg":9.0,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":1,"dnf_rate":0.2,"avg_q_gap":0.71,"q_samples":1,"pos_gained":0.0,"pace_2026":0.4545},"Austin":{"wavg_finish":9.0,"recent_avg":9.0,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":1,"dnf_rate":0.2,"avg_q_gap":0.629,"q_samples":1,"pos_gained":-1.0,"pace_2026":0.4545},"Mexico City":{"wavg_finish":4.0,"recent_avg":4.0,"wins":0,"podiums":0,"top5s":1,"top10s":1,"poles":0,"races":1,"dnf_rate":0.2,"avg_q_gap":0.874,"q_samples":1,"pos_gained":5.0,"pace_2026":0.4545},"Interlagos":{"wavg_finish":8.471,"recent_avg":8.471,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":2,"dnf_rate":0.167,"avg_q_gap":3.365,"q_samples":2,"pos_gained":2.5,"pace_2026":0.4545},"Las Vegas":{"wavg_finish":10.0,"recent_avg":10.0,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":1,"dnf_rate":0.2,"avg_q_gap":5.16,"q_samples":1,"pos_gained":4.0,"pace_2026":0.4545},"Lusail":{"wavg_finish":19.0,"recent_avg":19.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.4,"avg_q_gap":1.051,"q_samples":1,"pos_gained":0.0,"pace_2026":0.4545},"Yas Marina":{"wavg_finish":12.0,"recent_avg":12.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.2,"avg_q_gap":0.834,"q_samples":1,"pos_gained":-1.0,"pace_2026":0.4545}},"OCO":{"Albert Park":{"wavg_finish":11.616,"recent_avg":12.111,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":6,"dnf_rate":0.1,"avg_q_gap":1.832,"q_samples":6,"pos_gained":1.17,"pace_2026":0.4545},"Shanghai":{"wavg_finish":12.797,"recent_avg":11.758,"wins":0,"podiums":0,"top5s":1,"top10s":1,"poles":0,"races":4,"dnf_rate":0.0,"avg_q_gap":1.38,"q_samples":4,"pos_gained":2.0,"pace_2026":0.4545},"Suzuka":{"wavg_finish":10.924,"recent_avg":12.323,"wins":0,"podiums":0,"top5s":1,"top10s":4,"poles":0,"races":6,"dnf_rate":0.0,"avg_q_gap":1.556,"q_samples":6,"pos_gained":1.67,"pace_2026":0.4545},"Miami":{"wavg_finish":12.276,"recent_avg":12.374,"wins":0,"podiums":0,"top5s":0,"top10s":3,"poles":0,"races":5,"dnf_rate":0.0,"avg_q_gap":1.256,"q_samples":4,"pos_gained":2.4,"pace_2026":0.4545},"Montreal":{"wavg_finish":8.643,"recent_avg":9.091,"wins":0,"podiums":0,"top5s":0,"top10s":5,"poles":0,"races":5,"dnf_rate":0.0,"avg_q_gap":1.665,"q_samples":5,"pos_gained":2.2,"pace_2026":0.4545},"Monaco":{"wavg_finish":10.058,"recent_avg":10.227,"wins":0,"podiums":1,"top5s":1,"top10s":4,"poles":0,"races":6,"dnf_rate":0.1,"avg_q_gap":0.919,"q_samples":6,"pos_gained":0.2,"pace_2026":0.4545},"Barcelona":{"wavg_finish":11.852,"recent_avg":12.273,"wins":0,"podiums":0,"top5s":0,"top10s":4,"poles":0,"races":7,"dnf_rate":0.091,"avg_q_gap":1.353,"q_samples":7,"pos_gained":-0.17,"pace_2026":0.4545},"Red Bull Ring":{"wavg_finish":11.808,"recent_avg":11.545,"wins":0,"podiums":0,"top5s":1,"top10s":4,"poles":0,"races":9,"dnf_rate":0.154,"avg_q_gap":1.214,"q_samples":7,"pos_gained":2.57,"pace_2026":0.4545},"Silverstone":{"wavg_finish":13.769,"recent_avg":15.545,"wins":0,"podiums":0,"top5s":0,"top10s":4,"poles":0,"races":8,"dnf_rate":0.167,"avg_q_gap":3.148,"q_samples":7,"pos_gained":2.5,"pace_2026":0.4545},"Spa":{"wavg_finish":9.716,"recent_avg":11.5,"wins":0,"podiums":0,"top5s":1,"top10s":6,"poles":0,"races":7,"dnf_rate":0.0,"avg_q_gap":2.563,"q_samples":7,"pos_gained":1.43,"pace_2026":0.4545},"Hungaroring":{"wavg_finish":14.426,"recent_avg":17.545,"wins":1,"podiums":1,"top5s":1,"top10s":2,"poles":0,"races":7,"dnf_rate":0.091,"avg_q_gap":1.616,"q_samples":7,"pos_gained":1.67,"pace_2026":0.4545},"Zandvoort":{"wavg_finish":10.952,"recent_avg":11.591,"wins":0,"podiums":0,"top5s":0,"top10s":4,"poles":0,"races":5,"dnf_rate":0.0,"avg_q_gap":3.345,"q_samples":5,"pos_gained":3.2,"pace_2026":0.4545},"Monza":{"wavg_finish":13.515,"recent_avg":15.818,"wins":0,"podiums":0,"top5s":0,"top10s":3,"poles":0,"races":7,"dnf_rate":0.0,"avg_q_gap":1.502,"q_samples":7,"pos_gained":2.0,"pace_2026":0.4545},"Baku":{"wavg_finish":14.872,"recent_avg":14.545,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":6,"dnf_rate":0.2,"avg_q_gap":2.089,"q_samples":5,"pos_gained":-5.25,"pace_2026":0.4545},"Marina Bay":{"wavg_finish":17.536,"recent_avg":16.864,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":5,"dnf_rate":0.333,"avg_q_gap":2.245,"q_samples":5,"pos_gained":0.5,"pace_2026":0.4545},"Austin":{"wavg_finish":16.795,"recent_avg":17.091,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":6,"dnf_rate":0.2,"avg_q_gap":1.598,"q_samples":6,"pos_gained":-5.0,"pace_2026":0.4545},"Mexico City":{"wavg_finish":10.468,"recent_avg":10.5,"wins":0,"podiums":0,"top5s":0,"top10s":3,"poles":0,"races":6,"dnf_rate":0.0,"avg_q_gap":1.568,"q_samples":6,"pos_gained":0.33,"pace_2026":0.4545},"Interlagos":{"wavg_finish":8.705,"recent_avg":8.364,"wins":0,"podiums":1,"top5s":1,"top10s":4,"poles":0,"races":6,"dnf_rate":0.0,"avg_q_gap":0.939,"q_samples":6,"pos_gained":4.17,"pace_2026":0.4545},"Las Vegas":{"wavg_finish":10.409,"recent_avg":10.409,"wins":0,"podiums":0,"top5s":1,"top10s":2,"poles":0,"races":3,"dnf_rate":0.0,"avg_q_gap":3.065,"q_samples":3,"pos_gained":3.33,"pace_2026":0.4545},"Lusail":{"wavg_finish":13.532,"recent_avg":14.773,"wins":0,"podiums":0,"top5s":1,"top10s":2,"poles":0,"races":4,"dnf_rate":0.125,"avg_q_gap":1.541,"q_samples":4,"pos_gained":2.5,"pace_2026":0.4545},"Yas Marina":{"wavg_finish":9.336,"recent_avg":8.316,"wins":0,"podiums":0,"top5s":0,"top10s":4,"poles":0,"races":6,"dnf_rate":0.1,"avg_q_gap":0.981,"q_samples":6,"pos_gained":0.6,"pace_2026":0.4545}},"GAS":{"Albert Park":{"wavg_finish":10.735,"recent_avg":10.626,"wins":0,"podiums":0,"top5s":0,"top10s":2,"poles":0,"races":7,"dnf_rate":0.273,"avg_q_gap":1.703,"q_samples":7,"pos_gained":1.67,"pace_2026":0.625},"Shanghai":{"wavg_finish":8.441,"recent_avg":9.818,"wins":0,"podiums":0,"top5s":0,"top10s":2,"poles":0,"races":5,"dnf_rate":0.111,"avg_q_gap":1.261,"q_samples":5,"pos_gained":-0.4,"pace_2026":0.625},"Suzuka":{"wavg_finish":9.168,"recent_avg":9.485,"wins":0,"podiums":0,"top5s":0,"top10s":3,"poles":0,"races":7,"dnf_rate":0.091,"avg_q_gap":1.313,"q_samples":7,"pos_gained":-0.29,"pace_2026":0.625},"Miami":{"wavg_finish":18.837,"recent_avg":18.111,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":5,"dnf_rate":0.333,"avg_q_gap":1.047,"q_samples":5,"pos_gained":-2.0,"pace_2026":0.625},"Montreal":{"wavg_finish":12.178,"recent_avg":12.409,"wins":0,"podiums":0,"top5s":0,"top10s":2,"poles":0,"races":6,"dnf_rate":0.1,"avg_q_gap":3.494,"q_samples":6,"pos_gained":2.83,"pace_2026":0.625},"Monaco":{"wavg_finish":11.732,"recent_avg":13.864,"wins":0,"podiums":0,"top5s":1,"top10s":5,"poles":0,"races":7,"dnf_rate":0.182,"avg_q_gap":1.293,"q_samples":7,"pos_gained":1.29,"pace_2026":0.625},"Barcelona":{"wavg_finish":9.801,"recent_avg":8.773,"wins":0,"podiums":0,"top5s":0,"top10s":6,"poles":0,"races":8,"dnf_rate":0.167,"avg_q_gap":0.975,"q_samples":8,"pos_gained":0.29,"pace_2026":0.625},"Red Bull Ring":{"wavg_finish":11.876,"recent_avg":11.364,"wins":0,"podiums":0,"top5s":0,"top10s":5,"poles":0,"races":10,"dnf_rate":0.143,"avg_q_gap":0.975,"q_samples":8,"pos_gained":-0.67,"pace_2026":0.625},"Silverstone":{"wavg_finish":12.567,"recent_avg":13.182,"wins":0,"podiums":0,"top5s":1,"top10s":3,"poles":0,"races":9,"dnf_rate":0.308,"avg_q_gap":3.772,"q_samples":8,"pos_gained":-0.57,"pace_2026":0.625},"Spa":{"wavg_finish":9.989,"recent_avg":11.182,"wins":0,"podiums":0,"top5s":0,"top10s":6,"poles":0,"races":8,"dnf_rate":0.083,"avg_q_gap":2.389,"q_samples":8,"pos_gained":0.38,"pace_2026":0.625},"Hungaroring":{"wavg_finish":15.812,"recent_avg":19.545,"wins":0,"podiums":0,"top5s":1,"top10s":3,"poles":0,"races":8,"dnf_rate":0.333,"avg_q_gap":1.723,"q_samples":8,"pos_gained":-3.0,"pace_2026":0.625},"Zandvoort":{"wavg_finish":10.438,"recent_avg":11.273,"wins":0,"podiums":1,"top5s":2,"top10s":3,"poles":0,"races":5,"dnf_rate":0.111,"avg_q_gap":2.47,"q_samples":5,"pos_gained":1.2,"pace_2026":0.625},"Monza":{"wavg_finish":13.619,"recent_avg":15.455,"wins":1,"podiums":1,"top5s":1,"top10s":2,"poles":0,"races":8,"dnf_rate":0.167,"avg_q_gap":1.489,"q_samples":8,"pos_gained":1.71,"pace_2026":0.625},"Baku":{"wavg_finish":12.964,"recent_avg":15.182,"wins":0,"podiums":1,"top5s":2,"top10s":2,"poles":0,"races":7,"dnf_rate":0.091,"avg_q_gap":2.198,"q_samples":6,"pos_gained":2.67,"pace_2026":0.625},"Marina Bay":{"wavg_finish":13.954,"recent_avg":15.409,"wins":0,"podiums":0,"top5s":0,"top10s":3,"poles":0,"races":6,"dnf_rate":0.1,"avg_q_gap":1.985,"q_samples":6,"pos_gained":1.5,"pace_2026":0.625},"Austin":{"wavg_finish":14.476,"recent_avg":13.818,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":7,"dnf_rate":0.273,"avg_q_gap":1.166,"q_samples":7,"pos_gained":-2.0,"pace_2026":0.625},"Mexico City":{"wavg_finish":11.113,"recent_avg":12.5,"wins":0,"podiums":0,"top5s":1,"top10s":4,"poles":0,"races":7,"dnf_rate":0.091,"avg_q_gap":1.517,"q_samples":7,"pos_gained":2.29,"pace_2026":0.625},"Interlagos":{"wavg_finish":7.893,"recent_avg":7.091,"wins":0,"podiums":2,"top5s":2,"top10s":5,"poles":0,"races":7,"dnf_rate":0.091,"avg_q_gap":1.782,"q_samples":7,"pos_gained":1.86,"pace_2026":0.625},"Las Vegas":{"wavg_finish":14.773,"recent_avg":14.773,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":3,"dnf_rate":0.286,"avg_q_gap":1.868,"q_samples":3,"pos_gained":-5.0,"pace_2026":0.625},"Lusail":{"wavg_finish":11.516,"recent_avg":11.591,"wins":0,"podiums":0,"top5s":1,"top10s":1,"poles":0,"races":4,"dnf_rate":0.125,"avg_q_gap":0.884,"q_samples":4,"pos_gained":-2.67,"pace_2026":0.625},"Yas Marina":{"wavg_finish":13.26,"recent_avg":13.818,"wins":0,"podiums":0,"top5s":1,"top10s":3,"poles":0,"races":8,"dnf_rate":0.167,"avg_q_gap":1.269,"q_samples":8,"pos_gained":-0.14,"pace_2026":0.625}},"COL":{"Albert Park":{"wavg_finish":14.0,"recent_avg":14.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.0,"avg_q_gap":2.682,"q_samples":1,"pos_gained":2.0,"pace_2026":0.4659},"Shanghai":{"wavg_finish":10.0,"recent_avg":10.0,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":1,"dnf_rate":0.0,"avg_q_gap":1.293,"q_samples":1,"pos_gained":2.0,"pace_2026":0.4659},"Suzuka":{"wavg_finish":16.0,"recent_avg":16.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.0,"avg_q_gap":1.849,"q_samples":1,"pos_gained":-1.0,"pace_2026":0.4659},"Miami":{"wavg_finish":8.0,"recent_avg":8.0,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":1,"dnf_rate":0.0,"avg_q_gap":0.964,"q_samples":1,"pos_gained":0.0,"pace_2026":0.4659},"Montreal":{"wavg_finish":13.0,"recent_avg":13.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.0,"avg_q_gap":1.243,"q_samples":1,"pos_gained":-3.0,"pace_2026":0.4659},"Monaco":{"wavg_finish":13.0,"recent_avg":13.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.0,"avg_q_gap":2.643,"q_samples":1,"pos_gained":5.0,"pace_2026":0.4659},"Barcelona":{"wavg_finish":15.0,"recent_avg":15.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.0,"avg_q_gap":1.788,"q_samples":1,"pos_gained":3.0,"pace_2026":0.4659},"Red Bull Ring":{"wavg_finish":15.0,"recent_avg":15.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.0,"avg_q_gap":1.307,"q_samples":1,"pos_gained":-1.0,"pace_2026":0.4659},"Silverstone":{"wavg_finish":20.0,"recent_avg":20.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.2,"avg_q_gap":2.168,"q_samples":1,"pos_gained":0.0,"pace_2026":0.4659},"Spa":{"wavg_finish":19.0,"recent_avg":19.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.0,"avg_q_gap":1.46,"q_samples":1,"pos_gained":-4.0,"pace_2026":0.4659},"Hungaroring":{"wavg_finish":18.0,"recent_avg":18.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.0,"avg_q_gap":0.985,"q_samples":1,"pos_gained":-4.0,"pace_2026":0.4659},"Zandvoort":{"wavg_finish":11.0,"recent_avg":11.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.0,"avg_q_gap":1.442,"q_samples":1,"pos_gained":5.0,"pace_2026":0.4659},"Monza":{"wavg_finish":14.941,"recent_avg":14.941,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":2,"dnf_rate":0.0,"avg_q_gap":1.42,"q_samples":2,"pos_gained":3.0,"pace_2026":0.4659},"Baku":{"wavg_finish":14.471,"recent_avg":14.471,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":2,"dnf_rate":0.0,"avg_q_gap":1.434,"q_samples":2,"pos_gained":-1.5,"pace_2026":0.4659},"Marina Bay":{"wavg_finish":13.941,"recent_avg":13.941,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":2,"dnf_rate":0.0,"avg_q_gap":1.467,"q_samples":2,"pos_gained":0.5,"pace_2026":0.4659},"Austin":{"wavg_finish":14.118,"recent_avg":14.118,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":2,"dnf_rate":0.0,"avg_q_gap":1.613,"q_samples":2,"pos_gained":1.5,"pace_2026":0.4659},"Mexico City":{"wavg_finish":14.353,"recent_avg":14.353,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":2,"dnf_rate":0.0,"avg_q_gap":1.89,"q_samples":2,"pos_gained":4.0,"pace_2026":0.4659},"Interlagos":{"wavg_finish":17.059,"recent_avg":17.059,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":2,"dnf_rate":0.167,"avg_q_gap":3.898,"q_samples":2,"pos_gained":1.0,"pace_2026":0.4659},"Las Vegas":{"wavg_finish":14.588,"recent_avg":14.588,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":2,"dnf_rate":0.0,"avg_q_gap":3.972,"q_samples":2,"pos_gained":-7.0,"pace_2026":0.4659},"Lusail":{"wavg_finish":16.471,"recent_avg":16.471,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":2,"dnf_rate":0.167,"avg_q_gap":1.883,"q_samples":2,"pos_gained":0.0,"pace_2026":0.4659},"Yas Marina":{"wavg_finish":20.0,"recent_avg":20.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":2,"dnf_rate":0.167,"avg_q_gap":1.532,"q_samples":2,"pos_gained":0.0,"pace_2026":0.4659}},"LAW":{"Albert Park":{"wavg_finish":13.121,"recent_avg":13.513,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":2,"dnf_rate":0.333,"avg_q_gap":1.677,"q_samples":2,"pos_gained":-1.0,"pace_2026":0.5114},"Shanghai":{"wavg_finish":7.304,"recent_avg":8.282,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":2,"dnf_rate":0.167,"avg_q_gap":1.636,"q_samples":2,"pos_gained":7.5,"pace_2026":0.5114},"Suzuka":{"wavg_finish":9.792,"recent_avg":10.935,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":3,"dnf_rate":0.143,"avg_q_gap":1.434,"q_samples":3,"pos_gained":0.33,"pace_2026":0.5114},"Miami":{"wavg_finish":19.818,"recent_avg":19.231,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":2,"dnf_rate":0.5,"avg_q_gap":1.493,"q_samples":2,"pos_gained":-5.5,"pace_2026":0.5114},"Montreal":{"wavg_finish":19.0,"recent_avg":19.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.4,"avg_q_gap":1.626,"q_samples":1,"pos_gained":0.0,"pace_2026":0.5114},"Monaco":{"wavg_finish":8.0,"recent_avg":8.0,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":1,"dnf_rate":0.2,"avg_q_gap":1.175,"q_samples":1,"pos_gained":1.0,"pace_2026":0.5114},"Barcelona":{"wavg_finish":11.0,"recent_avg":11.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.2,"avg_q_gap":1.217,"q_samples":1,"pos_gained":2.0,"pace_2026":0.5114},"Red Bull Ring":{"wavg_finish":6.0,"recent_avg":6.0,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":1,"dnf_rate":0.2,"avg_q_gap":0.955,"q_samples":1,"pos_gained":0.0,"pace_2026":0.5114},"Silverstone":{"wavg_finish":19.0,"recent_avg":19.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.4,"avg_q_gap":1.548,"q_samples":1,"pos_gained":-4.0,"pace_2026":0.5114},"Spa":{"wavg_finish":8.0,"recent_avg":8.0,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":1,"dnf_rate":0.2,"avg_q_gap":0.735,"q_samples":1,"pos_gained":1.0,"pace_2026":0.5114},"Hungaroring":{"wavg_finish":8.0,"recent_avg":8.0,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":1,"dnf_rate":0.2,"avg_q_gap":0.74,"q_samples":1,"pos_gained":1.0,"pace_2026":0.5114},"Zandvoort":{"wavg_finish":12.333,"recent_avg":12.333,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":2,"dnf_rate":0.167,"avg_q_gap":4.765,"q_samples":2,"pos_gained":1.0,"pace_2026":0.5114},"Monza":{"wavg_finish":13.0,"recent_avg":13.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":2,"dnf_rate":0.167,"avg_q_gap":1.479,"q_samples":2,"pos_gained":2.5,"pace_2026":0.5114},"Baku":{"wavg_finish":5.0,"recent_avg":5.0,"wins":0,"podiums":0,"top5s":1,"top10s":1,"poles":0,"races":1,"dnf_rate":0.2,"avg_q_gap":0.42,"q_samples":1,"pos_gained":-2.0,"pace_2026":0.5114},"Marina Bay":{"wavg_finish":13.0,"recent_avg":13.0,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":2,"dnf_rate":0.167,"avg_q_gap":1.169,"q_samples":2,"pos_gained":-1.0,"pace_2026":0.5114},"Austin":{"wavg_finish":10.176,"recent_avg":10.176,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":2,"dnf_rate":0.167,"avg_q_gap":0.915,"q_samples":2,"pos_gained":5.5,"pace_2026":0.5114},"Mexico City":{"wavg_finish":18.353,"recent_avg":18.353,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":2,"dnf_rate":0.333,"avg_q_gap":1.31,"q_samples":2,"pos_gained":-4.5,"pace_2026":0.5114},"Interlagos":{"wavg_finish":7.824,"recent_avg":7.824,"wins":0,"podiums":0,"top5s":0,"top10s":2,"poles":0,"races":2,"dnf_rate":0.167,"avg_q_gap":0.703,"q_samples":2,"pos_gained":-2.0,"pace_2026":0.5114},"Las Vegas":{"wavg_finish":14.824,"recent_avg":14.824,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":2,"dnf_rate":0.167,"avg_q_gap":1.394,"q_samples":2,"pos_gained":-5.0,"pace_2026":0.5114},"Lusail":{"wavg_finish":12.409,"recent_avg":12.409,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":3,"dnf_rate":0.143,"avg_q_gap":1.726,"q_samples":3,"pos_gained":1.5,"pace_2026":0.5114},"Yas Marina":{"wavg_finish":17.588,"recent_avg":17.588,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":2,"dnf_rate":0.333,"avg_q_gap":0.873,"q_samples":2,"pos_gained":-5.0,"pace_2026":0.5114}},"LIN":{"Albert Park":{"wavg_finish":8.0,"recent_avg":8.0,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":1,"dnf_rate":0.0,"avg_q_gap":1.453,"q_samples":1,"pos_gained":1.0,"pace_2026":0.4773},"Shanghai":{"wavg_finish":12.0,"recent_avg":12.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.0,"avg_q_gap":1.72,"q_samples":1,"pos_gained":3.0,"pace_2026":0.4773},"Suzuka":{"wavg_finish":14.0,"recent_avg":14.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.0,"avg_q_gap":1.331,"q_samples":1,"pos_gained":-4.0,"pace_2026":0.4773},"Miami":{"wavg_finish":14.0,"recent_avg":14.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.0,"avg_q_gap":2.335,"q_samples":1,"pos_gained":2.0,"pace_2026":0.4773},"Montreal":{"wavg_finish":12.5,"recent_avg":12.5,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":0,"dnf_rate":0.03,"avg_q_gap":1.829,"q_samples":0,"pos_gained":0.0,"pace_2026":0.4773},"Monaco":{"wavg_finish":12.5,"recent_avg":12.5,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":0,"dnf_rate":0.03,"avg_q_gap":1.829,"q_samples":0,"pos_gained":0.0,"pace_2026":0.4773},"Barcelona":{"wavg_finish":12.5,"recent_avg":12.5,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":0,"dnf_rate":0.03,"avg_q_gap":1.829,"q_samples":0,"pos_gained":0.0,"pace_2026":0.4773},"Red Bull Ring":{"wavg_finish":12.5,"recent_avg":12.5,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":0,"dnf_rate":0.03,"avg_q_gap":1.829,"q_samples":0,"pos_gained":0.0,"pace_2026":0.4773},"Silverstone":{"wavg_finish":12.5,"recent_avg":12.5,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":0,"dnf_rate":0.03,"avg_q_gap":1.829,"q_samples":0,"pos_gained":0.0,"pace_2026":0.4773},"Spa":{"wavg_finish":12.5,"recent_avg":12.5,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":0,"dnf_rate":0.03,"avg_q_gap":1.829,"q_samples":0,"pos_gained":0.0,"pace_2026":0.4773},"Hungaroring":{"wavg_finish":12.5,"recent_avg":12.5,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":0,"dnf_rate":0.03,"avg_q_gap":1.829,"q_samples":0,"pos_gained":0.0,"pace_2026":0.4773},"Zandvoort":{"wavg_finish":12.5,"recent_avg":12.5,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":0,"dnf_rate":0.03,"avg_q_gap":1.829,"q_samples":0,"pos_gained":0.0,"pace_2026":0.4773},"Monza":{"wavg_finish":12.5,"recent_avg":12.5,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":0,"dnf_rate":0.03,"avg_q_gap":1.829,"q_samples":0,"pos_gained":0.0,"pace_2026":0.4773},"Baku":{"wavg_finish":12.5,"recent_avg":12.5,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":0,"dnf_rate":0.03,"avg_q_gap":1.829,"q_samples":0,"pos_gained":0.0,"pace_2026":0.4773},"Marina Bay":{"wavg_finish":12.5,"recent_avg":12.5,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":0,"dnf_rate":0.03,"avg_q_gap":1.829,"q_samples":0,"pos_gained":0.0,"pace_2026":0.4773},"Austin":{"wavg_finish":12.5,"recent_avg":12.5,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":0,"dnf_rate":0.03,"avg_q_gap":1.829,"q_samples":0,"pos_gained":0.0,"pace_2026":0.4773},"Mexico City":{"wavg_finish":12.5,"recent_avg":12.5,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":0,"dnf_rate":0.03,"avg_q_gap":1.829,"q_samples":0,"pos_gained":0.0,"pace_2026":0.4773},"Interlagos":{"wavg_finish":12.5,"recent_avg":12.5,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":0,"dnf_rate":0.03,"avg_q_gap":1.829,"q_samples":0,"pos_gained":0.0,"pace_2026":0.4773},"Las Vegas":{"wavg_finish":12.5,"recent_avg":12.5,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":0,"dnf_rate":0.03,"avg_q_gap":1.829,"q_samples":0,"pos_gained":0.0,"pace_2026":0.4773},"Lusail":{"wavg_finish":12.5,"recent_avg":12.5,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":0,"dnf_rate":0.03,"avg_q_gap":1.829,"q_samples":0,"pos_gained":0.0,"pace_2026":0.4773},"Yas Marina":{"wavg_finish":12.5,"recent_avg":12.5,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":0,"dnf_rate":0.03,"avg_q_gap":1.829,"q_samples":0,"pos_gained":0.0,"pace_2026":0.4773}},"SAI":{"Albert Park":{"wavg_finish":14.304,"recent_avg":13.626,"wins":1,"podiums":1,"top5s":1,"top10s":2,"poles":0,"races":7,"dnf_rate":0.273,"avg_q_gap":0.834,"q_samples":6,"pos_gained":-1.8,"pace_2026":0.3485},"Shanghai":{"wavg_finish":8.931,"recent_avg":8.636,"wins":0,"podiums":0,"top5s":1,"top10s":4,"poles":0,"races":5,"dnf_rate":0.0,"avg_q_gap":1.566,"q_samples":5,"pos_gained":3.0,"pace_2026":0.3485},"Suzuka":{"wavg_finish":13.254,"recent_avg":13.101,"wins":0,"podiums":1,"top5s":2,"top10s":4,"poles":0,"races":7,"dnf_rate":0.091,"avg_q_gap":1.279,"q_samples":7,"pos_gained":1.33,"pace_2026":0.3485},"Miami":{"wavg_finish":8.265,"recent_avg":8.434,"wins":0,"podiums":1,"top5s":3,"top10s":5,"poles":0,"races":5,"dnf_rate":0.0,"avg_q_gap":0.844,"q_samples":5,"pos_gained":-0.8,"pace_2026":0.3485},"Montreal":{"wavg_finish":10.375,"recent_avg":12.045,"wins":0,"podiums":1,"top5s":2,"top10s":4,"poles":0,"races":6,"dnf_rate":0.1,"avg_q_gap":1.204,"q_samples":6,"pos_gained":2.8,"pace_2026":0.3485},"Monaco":{"wavg_finish":6.244,"recent_avg":7.318,"wins":0,"podiums":3,"top5s":3,"top10s":7,"poles":0,"races":7,"dnf_rate":0.0,"avg_q_gap":0.73,"q_samples":7,"pos_gained":0.0,"pace_2026":0.3485},"Barcelona":{"wavg_finish":8.127,"recent_avg":9.409,"wins":0,"podiums":0,"top5s":2,"top10s":7,"poles":0,"races":8,"dnf_rate":0.0,"avg_q_gap":1.041,"q_samples":8,"pos_gained":0.62,"pace_2026":0.3485},"Red Bull Ring":{"wavg_finish":10.614,"recent_avg":11.409,"wins":0,"podiums":1,"top5s":3,"top10s":7,"poles":0,"races":10,"dnf_rate":0.143,"avg_q_gap":0.908,"q_samples":8,"pos_gained":1.44,"pace_2026":0.3485},"Silverstone":{"wavg_finish":9.026,"recent_avg":9.318,"wins":1,"podiums":1,"top5s":2,"top10s":5,"poles":1,"races":9,"dnf_rate":0.077,"avg_q_gap":0.953,"q_samples":8,"pos_gained":-0.25,"pace_2026":0.3485},"Spa":{"wavg_finish":13.481,"recent_avg":14.636,"wins":0,"podiums":1,"top5s":1,"top10s":3,"poles":1,"races":8,"dnf_rate":0.167,"avg_q_gap":1.403,"q_samples":8,"pos_gained":0.4,"pace_2026":0.3485},"Hungaroring":{"wavg_finish":8.315,"recent_avg":10.091,"wins":0,"podiums":1,"top5s":3,"top10s":7,"poles":0,"races":8,"dnf_rate":0.0,"avg_q_gap":0.828,"q_samples":8,"pos_gained":1.12,"pace_2026":0.3485},"Zandvoort":{"wavg_finish":8.37,"recent_avg":8.636,"wins":0,"podiums":0,"top5s":2,"top10s":4,"poles":0,"races":5,"dnf_rate":0.0,"avg_q_gap":0.862,"q_samples":5,"pos_gained":-0.8,"pace_2026":0.3485},"Monza":{"wavg_finish":7.11,"recent_avg":6.955,"wins":0,"podiums":2,"top5s":4,"top10s":6,"poles":1,"races":8,"dnf_rate":0.083,"avg_q_gap":0.564,"q_samples":8,"pos_gained":2.14,"pace_2026":0.3485},"Baku":{"wavg_finish":9.327,"recent_avg":8.227,"wins":0,"podiums":1,"top5s":3,"top10s":5,"poles":0,"races":7,"dnf_rate":0.182,"avg_q_gap":0.656,"q_samples":7,"pos_gained":-2.33,"pace_2026":0.3485},"Marina Bay":{"wavg_finish":6.934,"recent_avg":7.0,"wins":1,"podiums":2,"top5s":2,"top10s":5,"poles":1,"races":6,"dnf_rate":0.0,"avg_q_gap":0.815,"q_samples":6,"pos_gained":1.83,"pace_2026":0.3485},"Austin":{"wavg_finish":10.851,"recent_avg":10.409,"wins":0,"podiums":2,"top5s":2,"top10s":5,"poles":1,"races":7,"dnf_rate":0.182,"avg_q_gap":0.564,"q_samples":7,"pos_gained":-1.33,"pace_2026":0.3485},"Mexico City":{"wavg_finish":9.149,"recent_avg":8.955,"wins":1,"podiums":1,"top5s":3,"top10s":4,"poles":1,"races":7,"dnf_rate":0.182,"avg_q_gap":0.506,"q_samples":7,"pos_gained":-2.17,"pace_2026":0.3485},"Interlagos":{"wavg_finish":10.786,"recent_avg":13.636,"wins":0,"podiums":2,"top5s":2,"top10s":4,"poles":0,"races":7,"dnf_rate":0.091,"avg_q_gap":1.82,"q_samples":6,"pos_gained":4.0,"pace_2026":0.3485},"Las Vegas":{"wavg_finish":4.591,"recent_avg":4.591,"wins":0,"podiums":1,"top5s":2,"top10s":3,"poles":0,"races":3,"dnf_rate":0.0,"avg_q_gap":0.206,"q_samples":3,"pos_gained":1.0,"pace_2026":0.3485},"Lusail":{"wavg_finish":7.714,"recent_avg":7.818,"wins":0,"podiums":1,"top5s":1,"top10s":3,"poles":0,"races":4,"dnf_rate":0.125,"avg_q_gap":0.924,"q_samples":4,"pos_gained":-0.5,"pace_2026":0.3485},"Yas Marina":{"wavg_finish":8.597,"recent_avg":10.636,"wins":0,"podiums":2,"top5s":3,"top10s":6,"poles":0,"races":8,"dnf_rate":0.083,"avg_q_gap":0.841,"q_samples":8,"pos_gained":0.38,"pace_2026":0.3485}},"ALB":{"Albert Park":{"wavg_finish":11.562,"recent_avg":10.444,"wins":0,"podiums":0,"top5s":1,"top10s":2,"poles":0,"races":6,"dnf_rate":0.2,"avg_q_gap":1.628,"q_samples":6,"pos_gained":2.8,"pace_2026":0.3068},"Shanghai":{"wavg_finish":19.47,"recent_avg":17.556,"wins":0,"podiums":0,"top5s":0,"top10s":2,"poles":0,"races":4,"dnf_rate":0.25,"avg_q_gap":1.91,"q_samples":3,"pos_gained":-1.25,"pace_2026":0.3068},"Suzuka":{"wavg_finish":18.383,"recent_avg":17.778,"wins":0,"podiums":0,"top5s":1,"top10s":2,"poles":0,"races":6,"dnf_rate":0.4,"avg_q_gap":1.624,"q_samples":6,"pos_gained":-0.33,"pace_2026":0.3068},"Miami":{"wavg_finish":10.224,"recent_avg":10.121,"wins":0,"podiums":0,"top5s":1,"top10s":3,"poles":0,"races":5,"dnf_rate":0.111,"avg_q_gap":1.382,"q_samples":5,"pos_gained":1.8,"pace_2026":0.3068},"Montreal":{"wavg_finish":16.725,"recent_avg":17.045,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":5,"dnf_rate":0.444,"avg_q_gap":1.466,"q_samples":5,"pos_gained":-3.33,"pace_2026":0.3068},"Monaco":{"wavg_finish":11.345,"recent_avg":10.136,"wins":0,"podiums":0,"top5s":0,"top10s":3,"poles":0,"races":5,"dnf_rate":0.222,"avg_q_gap":1.067,"q_samples":5,"pos_gained":0.5,"pace_2026":0.3068},"Barcelona":{"wavg_finish":16.619,"recent_avg":18.0,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":6,"dnf_rate":0.2,"avg_q_gap":1.694,"q_samples":6,"pos_gained":-4.33,"pace_2026":0.3068},"Red Bull Ring":{"wavg_finish":13.637,"recent_avg":15.0,"wins":0,"podiums":0,"top5s":1,"top10s":1,"poles":0,"races":7,"dnf_rate":0.182,"avg_q_gap":1.217,"q_samples":6,"pos_gained":-0.86,"pace_2026":0.3068},"Silverstone":{"wavg_finish":9.69,"recent_avg":8.318,"wins":0,"podiums":0,"top5s":1,"top10s":5,"poles":0,"races":7,"dnf_rate":0.182,"avg_q_gap":1.303,"q_samples":6,"pos_gained":1.67,"pace_2026":0.3068},"Spa":{"wavg_finish":9.084,"recent_avg":9.727,"wins":0,"podiums":0,"top5s":1,"top10s":4,"poles":0,"races":6,"dnf_rate":0.1,"avg_q_gap":3.355,"q_samples":6,"pos_gained":0.83,"pace_2026":0.3068},"Hungaroring":{"wavg_finish":13.161,"recent_avg":13.773,"wins":0,"podiums":0,"top5s":1,"top10s":2,"poles":0,"races":6,"dnf_rate":0.1,"avg_q_gap":1.67,"q_samples":6,"pos_gained":3.0,"pace_2026":0.3068},"Zandvoort":{"wavg_finish":9.077,"recent_avg":8.545,"wins":0,"podiums":0,"top5s":1,"top10s":2,"poles":0,"races":4,"dnf_rate":0.125,"avg_q_gap":1.03,"q_samples":3,"pos_gained":3.5,"pace_2026":0.3068},"Monza":{"wavg_finish":8.2,"recent_avg":7.636,"wins":0,"podiums":0,"top5s":0,"top10s":4,"poles":0,"races":5,"dnf_rate":0.111,"avg_q_gap":0.808,"q_samples":5,"pos_gained":0.4,"pace_2026":0.3068},"Baku":{"wavg_finish":11.035,"recent_avg":10.864,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":5,"dnf_rate":0.111,"avg_q_gap":2.198,"q_samples":5,"pos_gained":2.6,"pace_2026":0.3068},"Marina Bay":{"wavg_finish":15.12,"recent_avg":15.227,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":5,"dnf_rate":0.333,"avg_q_gap":2.066,"q_samples":5,"pos_gained":3.0,"pace_2026":0.3068},"Austin":{"wavg_finish":12.711,"recent_avg":13.5,"wins":0,"podiums":0,"top5s":1,"top10s":2,"poles":0,"races":5,"dnf_rate":0.111,"avg_q_gap":1.799,"q_samples":5,"pos_gained":0.8,"pace_2026":0.3068},"Mexico City":{"wavg_finish":12.852,"recent_avg":13.864,"wins":0,"podiums":0,"top5s":1,"top10s":2,"poles":0,"races":5,"dnf_rate":0.222,"avg_q_gap":1.703,"q_samples":5,"pos_gained":3.75,"pace_2026":0.3068},"Interlagos":{"wavg_finish":15.62,"recent_avg":15.909,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":5,"dnf_rate":0.222,"avg_q_gap":0.747,"q_samples":5,"pos_gained":-1.33,"pace_2026":0.3068},"Las Vegas":{"wavg_finish":16.364,"recent_avg":16.364,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":3,"dnf_rate":0.429,"avg_q_gap":4.574,"q_samples":3,"pos_gained":-3.5,"pace_2026":0.3068},"Lusail":{"wavg_finish":12.727,"recent_avg":12.727,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":3,"dnf_rate":0.143,"avg_q_gap":1.598,"q_samples":3,"pos_gained":0.5,"pace_2026":0.3068},"Yas Marina":{"wavg_finish":12.381,"recent_avg":13.955,"wins":0,"podiums":0,"top5s":1,"top10s":2,"poles":0,"races":6,"dnf_rate":0.1,"avg_q_gap":1.186,"q_samples":6,"pos_gained":2.33,"pace_2026":0.3068}},"HUL":{"Albert Park":{"wavg_finish":17.641,"recent_avg":17.131,"wins":0,"podiums":0,"top5s":0,"top10s":5,"poles":0,"races":6,"dnf_rate":0.3,"avg_q_gap":1.672,"q_samples":6,"pos_gained":2.17,"pace_2026":0.5341},"Shanghai":{"wavg_finish":11.511,"recent_avg":11.667,"wins":0,"podiums":0,"top5s":0,"top10s":2,"poles":0,"races":5,"dnf_rate":0.333,"avg_q_gap":1.159,"q_samples":5,"pos_gained":-0.75,"pace_2026":0.5341},"Suzuka":{"wavg_finish":12.194,"recent_avg":12.01,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":6,"dnf_rate":0.3,"avg_q_gap":1.738,"q_samples":6,"pos_gained":1.75,"pace_2026":0.5341},"Miami":{"wavg_finish":17.806,"recent_avg":16.859,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":4,"dnf_rate":0.375,"avg_q_gap":1.335,"q_samples":4,"pos_gained":-3.0,"pace_2026":0.5341},"Montreal":{"wavg_finish":9.955,"recent_avg":10.545,"wins":0,"podiums":0,"top5s":0,"top10s":3,"poles":0,"races":5,"dnf_rate":0.222,"avg_q_gap":1.564,"q_samples":5,"pos_gained":-0.2,"pace_2026":0.5341},"Monaco":{"wavg_finish":16.371,"recent_avg":17.5,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":5,"dnf_rate":0.333,"avg_q_gap":1.553,"q_samples":5,"pos_gained":-0.25,"pace_2026":0.5341},"Barcelona":{"wavg_finish":10.348,"recent_avg":9.182,"wins":0,"podiums":0,"top5s":1,"top10s":1,"poles":0,"races":5,"dnf_rate":0.333,"avg_q_gap":1.531,"q_samples":5,"pos_gained":-2.25,"pace_2026":0.5341},"Red Bull Ring":{"wavg_finish":11.485,"recent_avg":10.545,"wins":0,"podiums":0,"top5s":0,"top10s":2,"poles":0,"races":5,"dnf_rate":0.333,"avg_q_gap":1.258,"q_samples":5,"pos_gained":5.33,"pace_2026":0.5341},"Silverstone":{"wavg_finish":7.696,"recent_avg":6.227,"wins":0,"podiums":1,"top5s":1,"top10s":5,"poles":0,"races":7,"dnf_rate":0.273,"avg_q_gap":1.486,"q_samples":6,"pos_gained":2.5,"pace_2026":0.5341},"Spa":{"wavg_finish":14.97,"recent_avg":15.273,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":5,"dnf_rate":0.333,"avg_q_gap":4.872,"q_samples":5,"pos_gained":-3.5,"pace_2026":0.5341},"Hungaroring":{"wavg_finish":13.023,"recent_avg":13.227,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":5,"dnf_rate":0.222,"avg_q_gap":1.124,"q_samples":5,"pos_gained":-0.2,"pace_2026":0.5341},"Zandvoort":{"wavg_finish":12.591,"recent_avg":12.591,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":3,"dnf_rate":0.286,"avg_q_gap":3.388,"q_samples":3,"pos_gained":2.0,"pace_2026":0.5341},"Monza":{"wavg_finish":16.742,"recent_avg":18.364,"wins":0,"podiums":0,"top5s":1,"top10s":1,"poles":0,"races":5,"dnf_rate":0.333,"avg_q_gap":1.087,"q_samples":5,"pos_gained":-2.2,"pace_2026":0.5341},"Baku":{"wavg_finish":14.985,"recent_avg":14.636,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":5,"dnf_rate":0.333,"avg_q_gap":2.01,"q_samples":5,"pos_gained":-3.5,"pace_2026":0.5341},"Marina Bay":{"wavg_finish":14.0,"recent_avg":14.909,"wins":0,"podiums":0,"top5s":0,"top10s":3,"poles":0,"races":5,"dnf_rate":0.222,"avg_q_gap":1.055,"q_samples":5,"pos_gained":-3.4,"pace_2026":0.5341},"Austin":{"wavg_finish":8.508,"recent_avg":8.682,"wins":0,"podiums":0,"top5s":0,"top10s":4,"poles":0,"races":5,"dnf_rate":0.222,"avg_q_gap":1.233,"q_samples":5,"pos_gained":-0.4,"pace_2026":0.5341},"Mexico City":{"wavg_finish":13.409,"recent_avg":14.455,"wins":0,"podiums":0,"top5s":0,"top10s":3,"poles":0,"races":5,"dnf_rate":0.222,"avg_q_gap":1.351,"q_samples":5,"pos_gained":-0.6,"pace_2026":0.5341},"Interlagos":{"wavg_finish":13.864,"recent_avg":13.182,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":5,"dnf_rate":0.333,"avg_q_gap":2.691,"q_samples":5,"pos_gained":-0.67,"pace_2026":0.5341},"Las Vegas":{"wavg_finish":10.045,"recent_avg":10.045,"wins":0,"podiums":0,"top5s":0,"top10s":2,"poles":0,"races":3,"dnf_rate":0.429,"avg_q_gap":2.727,"q_samples":3,"pos_gained":-0.33,"pace_2026":0.5341},"Lusail":{"wavg_finish":19.091,"recent_avg":19.091,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":3,"dnf_rate":0.571,"avg_q_gap":1.506,"q_samples":3,"pos_gained":-2.0,"pace_2026":0.5341},"Yas Marina":{"wavg_finish":10.977,"recent_avg":10.045,"wins":0,"podiums":0,"top5s":0,"top10s":2,"poles":0,"races":5,"dnf_rate":0.333,"avg_q_gap":0.982,"q_samples":5,"pos_gained":-0.5,"pace_2026":0.5341}},"BOR":{"Albert Park":{"wavg_finish":9.425,"recent_avg":10.795,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":2,"dnf_rate":0.333,"avg_q_gap":1.594,"q_samples":2,"pos_gained":0.0,"pace_2026":0.4091},"Shanghai":{"wavg_finish":20.575,"recent_avg":19.205,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":2,"dnf_rate":0.333,"avg_q_gap":1.491,"q_samples":2,"pos_gained":0.0,"pace_2026":0.4091},"Suzuka":{"wavg_finish":13.364,"recent_avg":14.538,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":2,"dnf_rate":0.167,"avg_q_gap":1.376,"q_samples":2,"pos_gained":-3.0,"pace_2026":0.4091},"Miami":{"wavg_finish":12.364,"recent_avg":13.538,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":2,"dnf_rate":0.333,"avg_q_gap":4.019,"q_samples":2,"pos_gained":2.0,"pace_2026":0.4091},"Montreal":{"wavg_finish":14.0,"recent_avg":14.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.2,"avg_q_gap":1.486,"q_samples":1,"pos_gained":1.0,"pace_2026":0.4091},"Monaco":{"wavg_finish":14.0,"recent_avg":14.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.2,"avg_q_gap":1.948,"q_samples":1,"pos_gained":2.0,"pace_2026":0.4091},"Barcelona":{"wavg_finish":12.0,"recent_avg":12.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.2,"avg_q_gap":1.21,"q_samples":1,"pos_gained":0.0,"pace_2026":0.4091},"Red Bull Ring":{"wavg_finish":8.0,"recent_avg":8.0,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":1,"dnf_rate":0.2,"avg_q_gap":0.875,"q_samples":1,"pos_gained":0.0,"pace_2026":0.4091},"Silverstone":{"wavg_finish":18.0,"recent_avg":18.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.4,"avg_q_gap":1.554,"q_samples":1,"pos_gained":-2.0,"pace_2026":0.4091},"Spa":{"wavg_finish":9.0,"recent_avg":9.0,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":1,"dnf_rate":0.2,"avg_q_gap":0.774,"q_samples":1,"pos_gained":1.0,"pace_2026":0.4091},"Hungaroring":{"wavg_finish":6.0,"recent_avg":6.0,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":1,"dnf_rate":0.2,"avg_q_gap":0.696,"q_samples":1,"pos_gained":1.0,"pace_2026":0.4091},"Zandvoort":{"wavg_finish":15.0,"recent_avg":15.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.2,"avg_q_gap":0.96,"q_samples":1,"pos_gained":-2.0,"pace_2026":0.4091},"Monza":{"wavg_finish":8.0,"recent_avg":8.0,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":1,"dnf_rate":0.2,"avg_q_gap":0.531,"q_samples":1,"pos_gained":-1.0,"pace_2026":0.4091},"Baku":{"wavg_finish":11.0,"recent_avg":11.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.2,"avg_q_gap":1.16,"q_samples":1,"pos_gained":2.0,"pace_2026":0.4091},"Marina Bay":{"wavg_finish":17.0,"recent_avg":17.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.2,"avg_q_gap":1.662,"q_samples":1,"pos_gained":-3.0,"pace_2026":0.4091},"Austin":{"wavg_finish":18.0,"recent_avg":18.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.2,"avg_q_gap":1.615,"q_samples":1,"pos_gained":-2.0,"pace_2026":0.4091},"Mexico City":{"wavg_finish":10.0,"recent_avg":10.0,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":1,"dnf_rate":0.2,"avg_q_gap":1.826,"q_samples":1,"pos_gained":6.0,"pace_2026":0.4091},"Interlagos":{"wavg_finish":20.0,"recent_avg":20.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.4,"avg_q_gap":2.068,"q_samples":0,"pos_gained":-2.0,"pace_2026":0.4091},"Las Vegas":{"wavg_finish":17.0,"recent_avg":17.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.4,"avg_q_gap":8.74,"q_samples":1,"pos_gained":1.0,"pace_2026":0.4091},"Lusail":{"wavg_finish":13.0,"recent_avg":13.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.2,"avg_q_gap":1.147,"q_samples":1,"pos_gained":0.0,"pace_2026":0.4091},"Yas Marina":{"wavg_finish":11.0,"recent_avg":11.0,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":1,"dnf_rate":0.2,"avg_q_gap":0.667,"q_samples":1,"pos_gained":-4.0,"pace_2026":0.4091}},"BOT":{"Albert Park":{"wavg_finish":16.551,"recent_avg":17.214,"wins":1,"podiums":1,"top5s":1,"top10s":3,"poles":0,"races":6,"dnf_rate":0.2,"avg_q_gap":2.834,"q_samples":6,"pos_gained":0.0,"pace_2026":0.1591},"Shanghai":{"wavg_finish":13.008,"recent_avg":13.593,"wins":0,"podiums":2,"top5s":2,"top10s":2,"poles":1,"races":4,"dnf_rate":0.25,"avg_q_gap":2.264,"q_samples":4,"pos_gained":2.0,"pace_2026":0.1591},"Suzuka":{"wavg_finish":17.362,"recent_avg":18.286,"wins":1,"podiums":2,"top5s":2,"top10s":2,"poles":0,"races":6,"dnf_rate":0.2,"avg_q_gap":2.31,"q_samples":6,"pos_gained":-0.2,"pace_2026":0.1591},"Miami":{"wavg_finish":17.066,"recent_avg":17.071,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":4,"dnf_rate":0.125,"avg_q_gap":2.385,"q_samples":4,"pos_gained":-1.0,"pace_2026":0.1591},"Montreal":{"wavg_finish":8.951,"recent_avg":10.562,"wins":0,"podiums":1,"top5s":2,"top10s":4,"poles":0,"races":5,"dnf_rate":0.111,"avg_q_gap":2.502,"q_samples":5,"pos_gained":-0.6,"pace_2026":0.1591},"Monaco":{"wavg_finish":11.153,"recent_avg":11.375,"wins":0,"podiums":1,"top5s":2,"top10s":3,"poles":0,"races":6,"dnf_rate":0.2,"avg_q_gap":1.289,"q_samples":6,"pos_gained":2.0,"pace_2026":0.1591},"Barcelona":{"wavg_finish":9.817,"recent_avg":14.438,"wins":0,"podiums":4,"top5s":4,"top10s":5,"poles":1,"races":7,"dnf_rate":0.091,"avg_q_gap":0.707,"q_samples":7,"pos_gained":-1.14,"pace_2026":0.1591},"Red Bull Ring":{"wavg_finish":9.438,"recent_avg":14.438,"wins":1,"podiums":5,"top5s":5,"top10s":5,"poles":2,"races":9,"dnf_rate":0.154,"avg_q_gap":0.947,"q_samples":7,"pos_gained":-0.38,"pace_2026":0.1591},"Silverstone":{"wavg_finish":10.549,"recent_avg":15.312,"wins":0,"podiums":3,"top5s":4,"top10s":4,"poles":2,"races":8,"dnf_rate":0.167,"avg_q_gap":2.793,"q_samples":7,"pos_gained":-0.43,"pace_2026":0.1591},"Spa":{"wavg_finish":11.595,"recent_avg":15.312,"wins":0,"podiums":2,"top5s":3,"top10s":3,"poles":0,"races":7,"dnf_rate":0.182,"avg_q_gap":2.916,"q_samples":7,"pos_gained":2.83,"pace_2026":0.1591},"Hungaroring":{"wavg_finish":13.473,"recent_avg":15.75,"wins":0,"podiums":1,"top5s":2,"top10s":3,"poles":0,"races":7,"dnf_rate":0.273,"avg_q_gap":0.595,"q_samples":7,"pos_gained":-5.17,"pace_2026":0.1591},"Zandvoort":{"wavg_finish":15.24,"recent_avg":17.688,"wins":0,"podiums":1,"top5s":1,"top10s":1,"poles":0,"races":4,"dnf_rate":0.25,"avg_q_gap":4.348,"q_samples":4,"pos_gained":0.33,"pace_2026":0.1591},"Monza":{"wavg_finish":9.443,"recent_avg":13.375,"wins":0,"podiums":3,"top5s":4,"top10s":5,"poles":0,"races":7,"dnf_rate":0.091,"avg_q_gap":1.156,"q_samples":7,"pos_gained":3.43,"pace_2026":0.1591},"Baku":{"wavg_finish":13.847,"recent_avg":15.375,"wins":1,"podiums":1,"top5s":1,"top10s":1,"poles":1,"races":6,"dnf_rate":0.1,"avg_q_gap":1.776,"q_samples":6,"pos_gained":-0.6,"pace_2026":0.1591},"Marina Bay":{"wavg_finish":13.529,"recent_avg":16.0,"wins":0,"podiums":0,"top5s":2,"top10s":2,"poles":0,"races":5,"dnf_rate":0.111,"avg_q_gap":2.634,"q_samples":5,"pos_gained":1.75,"pace_2026":0.1591},"Austin":{"wavg_finish":12.314,"recent_avg":16.188,"wins":1,"podiums":1,"top5s":2,"top10s":3,"poles":1,"races":6,"dnf_rate":0.2,"avg_q_gap":1.222,"q_samples":6,"pos_gained":0.2,"pace_2026":0.1591},"Mexico City":{"wavg_finish":11.788,"recent_avg":13.312,"wins":0,"podiums":1,"top5s":2,"top10s":3,"poles":1,"races":6,"dnf_rate":0.1,"avg_q_gap":0.808,"q_samples":6,"pos_gained":-3.33,"pace_2026":0.1591},"Interlagos":{"wavg_finish":12.483,"recent_avg":14.188,"wins":0,"podiums":1,"top5s":2,"top10s":3,"poles":1,"races":6,"dnf_rate":0.3,"avg_q_gap":2.006,"q_samples":6,"pos_gained":-0.25,"pace_2026":0.1591},"Las Vegas":{"wavg_finish":17.583,"recent_avg":17.583,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":2,"dnf_rate":0.167,"avg_q_gap":1.568,"q_samples":2,"pos_gained":-4.5,"pace_2026":0.1591},"Lusail":{"wavg_finish":11.908,"recent_avg":11.908,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":3,"dnf_rate":0.286,"avg_q_gap":1.116,"q_samples":3,"pos_gained":1.5,"pace_2026":0.1591},"Yas Marina":{"wavg_finish":12.939,"recent_avg":18.438,"wins":0,"podiums":1,"top5s":3,"top10s":4,"poles":0,"races":7,"dnf_rate":0.182,"avg_q_gap":0.881,"q_samples":7,"pos_gained":2.5,"pace_2026":0.1591}},"PER":{"Albert Park":{"wavg_finish":13.272,"recent_avg":12.857,"wins":0,"podiums":1,"top5s":3,"top10s":3,"poles":0,"races":6,"dnf_rate":0.0,"avg_q_gap":2.547,"q_samples":5,"pos_gained":-0.5,"pace_2026":0.1477},"Shanghai":{"wavg_finish":13.597,"recent_avg":12.354,"wins":0,"podiums":1,"top5s":1,"top10s":2,"poles":0,"races":4,"dnf_rate":0.0,"avg_q_gap":3.185,"q_samples":4,"pos_gained":1.25,"pace_2026":0.1477},"Suzuka":{"wavg_finish":14.453,"recent_avg":14.857,"wins":0,"podiums":2,"top5s":2,"top10s":4,"poles":0,"races":6,"dnf_rate":0.1,"avg_q_gap":1.986,"q_samples":6,"pos_gained":3.0,"pace_2026":0.1477},"Miami":{"wavg_finish":13.727,"recent_avg":12.333,"wins":0,"podiums":1,"top5s":3,"top10s":3,"poles":1,"races":4,"dnf_rate":0.0,"avg_q_gap":2.167,"q_samples":4,"pos_gained":0.75,"pace_2026":0.1477},"Montreal":{"wavg_finish":15.039,"recent_avg":15.625,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":5,"dnf_rate":0.222,"avg_q_gap":3.8,"q_samples":5,"pos_gained":1.67,"pace_2026":0.1477},"Monaco":{"wavg_finish":12.271,"recent_avg":14.0,"wins":1,"podiums":1,"top5s":2,"top10s":2,"poles":0,"races":6,"dnf_rate":0.1,"avg_q_gap":1.516,"q_samples":6,"pos_gained":2.4,"pace_2026":0.1477},"Barcelona":{"wavg_finish":6.374,"recent_avg":5.25,"wins":0,"podiums":1,"top5s":4,"top10s":6,"poles":0,"races":7,"dnf_rate":0.0,"avg_q_gap":1.11,"q_samples":7,"pos_gained":3.0,"pace_2026":0.1477},"Red Bull Ring":{"wavg_finish":7.737,"recent_avg":9.0,"wins":0,"podiums":1,"top5s":2,"top10s":7,"poles":0,"races":9,"dnf_rate":0.077,"avg_q_gap":1.001,"q_samples":7,"pos_gained":4.0,"pace_2026":0.1477},"Silverstone":{"wavg_finish":11.398,"recent_avg":9.812,"wins":0,"podiums":1,"top5s":1,"top10s":3,"poles":0,"races":6,"dnf_rate":0.0,"avg_q_gap":5.082,"q_samples":6,"pos_gained":-3.67,"pace_2026":0.1477},"Spa":{"wavg_finish":6.802,"recent_avg":4.188,"wins":0,"podiums":2,"top5s":3,"top10s":6,"poles":0,"races":7,"dnf_rate":0.0,"avg_q_gap":0.999,"q_samples":7,"pos_gained":-3.71,"pace_2026":0.1477},"Hungaroring":{"wavg_finish":8.42,"recent_avg":5.25,"wins":0,"podiums":1,"top5s":2,"top10s":4,"poles":0,"races":7,"dnf_rate":0.091,"avg_q_gap":1.625,"q_samples":7,"pos_gained":4.67,"pace_2026":0.1477},"Zandvoort":{"wavg_finish":5.604,"recent_avg":5.125,"wins":0,"podiums":0,"top5s":2,"top10s":4,"poles":0,"races":4,"dnf_rate":0.0,"avg_q_gap":1.04,"q_samples":4,"pos_gained":-1.5,"pace_2026":0.1477},"Monza":{"wavg_finish":6.214,"recent_avg":5.625,"wins":0,"podiums":1,"top5s":2,"top10s":7,"poles":0,"races":7,"dnf_rate":0.0,"avg_q_gap":1.036,"q_samples":7,"pos_gained":3.57,"pace_2026":0.1477},"Baku":{"wavg_finish":6.593,"recent_avg":8.25,"wins":2,"podiums":4,"top5s":4,"top10s":5,"poles":0,"races":6,"dnf_rate":0.1,"avg_q_gap":0.499,"q_samples":6,"pos_gained":-0.33,"pace_2026":0.1477},"Marina Bay":{"wavg_finish":9.51,"recent_avg":7.125,"wins":1,"podiums":1,"top5s":1,"top10s":3,"poles":0,"races":5,"dnf_rate":0.111,"avg_q_gap":1.103,"q_samples":5,"pos_gained":0.0,"pace_2026":0.1477},"Austin":{"wavg_finish":5.703,"recent_avg":5.312,"wins":0,"podiums":1,"top5s":3,"top10s":6,"poles":0,"races":6,"dnf_rate":0.0,"avg_q_gap":0.958,"q_samples":6,"pos_gained":0.67,"pace_2026":0.1477},"Mexico City":{"wavg_finish":12.602,"recent_avg":14.438,"wins":0,"podiums":2,"top5s":2,"top10s":3,"poles":0,"races":6,"dnf_rate":0.2,"avg_q_gap":0.993,"q_samples":6,"pos_gained":1.75,"pace_2026":0.1477},"Interlagos":{"wavg_finish":7.602,"recent_avg":7.812,"wins":0,"podiums":0,"top5s":2,"top10s":5,"poles":0,"races":6,"dnf_rate":0.0,"avg_q_gap":1.903,"q_samples":6,"pos_gained":1.83,"pace_2026":0.1477},"Las Vegas":{"wavg_finish":7.083,"recent_avg":7.083,"wins":0,"podiums":1,"top5s":1,"top10s":2,"poles":0,"races":2,"dnf_rate":0.0,"avg_q_gap":1.545,"q_samples":2,"pos_gained":6.5,"pace_2026":0.1477},"Lusail":{"wavg_finish":13.342,"recent_avg":13.342,"wins":0,"podiums":0,"top5s":1,"top10s":2,"poles":0,"races":3,"dnf_rate":0.143,"avg_q_gap":1.291,"q_samples":3,"pos_gained":-1.5,"pace_2026":0.1477},"Yas Marina":{"wavg_finish":11.634,"recent_avg":10.75,"wins":0,"podiums":1,"top5s":2,"top10s":4,"poles":0,"races":7,"dnf_rate":0.182,"avg_q_gap":0.91,"q_samples":7,"pos_gained":0.4,"pace_2026":0.1477}},"ALO":{"Albert Park":{"wavg_finish":15.966,"recent_avg":16.384,"wins":0,"podiums":1,"top5s":2,"top10s":3,"poles":0,"races":6,"dnf_rate":0.1,"avg_q_gap":1.895,"q_samples":6,"pos_gained":-0.83,"pace_2026":0.2045},"Shanghai":{"wavg_finish":16.074,"recent_avg":15.586,"wins":0,"podiums":0,"top5s":0,"top10s":2,"poles":0,"races":4,"dnf_rate":0.125,"avg_q_gap":1.954,"q_samples":4,"pos_gained":-0.25,"pace_2026":0.2045},"Suzuka":{"wavg_finish":15.185,"recent_avg":14.889,"wins":0,"podiums":0,"top5s":0,"top10s":3,"poles":0,"races":6,"dnf_rate":0.0,"avg_q_gap":2.093,"q_samples":6,"pos_gained":1.5,"pace_2026":0.2045},"Miami":{"wavg_finish":13.796,"recent_avg":14.152,"wins":0,"podiums":1,"top5s":1,"top10s":2,"poles":0,"races":5,"dnf_rate":0.0,"avg_q_gap":1.952,"q_samples":5,"pos_gained":1.8,"pace_2026":0.2045},"Montreal":{"wavg_finish":7.071,"recent_avg":5.545,"wins":0,"podiums":1,"top5s":1,"top10s":4,"poles":0,"races":5,"dnf_rate":0.111,"avg_q_gap":0.796,"q_samples":5,"pos_gained":-2.0,"pace_2026":0.2045},"Monaco":{"wavg_finish":12.391,"recent_avg":12.591,"wins":0,"podiums":1,"top5s":1,"top10s":2,"poles":0,"races":6,"dnf_rate":0.2,"avg_q_gap":1.102,"q_samples":6,"pos_gained":-1.2,"pace_2026":0.2045},"Barcelona":{"wavg_finish":10.109,"recent_avg":9.5,"wins":0,"podiums":0,"top5s":0,"top10s":4,"poles":0,"races":6,"dnf_rate":0.0,"avg_q_gap":1.055,"q_samples":6,"pos_gained":0.67,"pace_2026":0.2045},"Red Bull Ring":{"wavg_finish":9.82,"recent_avg":10.045,"wins":0,"podiums":0,"top5s":1,"top10s":6,"poles":0,"races":7,"dnf_rate":0.0,"avg_q_gap":1.079,"q_samples":6,"pos_gained":2.86,"pace_2026":0.2045},"Silverstone":{"wavg_finish":7.673,"recent_avg":8.227,"wins":0,"podiums":0,"top5s":1,"top10s":6,"poles":0,"races":6,"dnf_rate":0.0,"avg_q_gap":1.165,"q_samples":6,"pos_gained":1.5,"pace_2026":0.2045},"Spa":{"wavg_finish":11.096,"recent_avg":11.409,"wins":0,"podiums":0,"top5s":2,"top10s":3,"poles":0,"races":6,"dnf_rate":0.1,"avg_q_gap":1.76,"q_samples":6,"pos_gained":1.2,"pace_2026":0.2045},"Hungaroring":{"wavg_finish":7.462,"recent_avg":7.818,"wins":0,"podiums":0,"top5s":2,"top10s":5,"poles":0,"races":6,"dnf_rate":0.0,"avg_q_gap":0.658,"q_samples":6,"pos_gained":0.17,"pace_2026":0.2045},"Zandvoort":{"wavg_finish":6.959,"recent_avg":7.273,"wins":0,"podiums":1,"top5s":1,"top10s":5,"poles":0,"races":5,"dnf_rate":0.0,"avg_q_gap":0.923,"q_samples":5,"pos_gained":2.4,"pace_2026":0.2045},"Monza":{"wavg_finish":14.667,"recent_avg":14.182,"wins":0,"podiums":0,"top5s":0,"top10s":2,"poles":0,"races":6,"dnf_rate":0.2,"avg_q_gap":1.156,"q_samples":6,"pos_gained":-2.0,"pace_2026":0.2045},"Baku":{"wavg_finish":8.756,"recent_avg":9.636,"wins":0,"podiums":0,"top5s":1,"top10s":5,"poles":0,"races":6,"dnf_rate":0.0,"avg_q_gap":1.124,"q_samples":6,"pos_gained":1.5,"pace_2026":0.2045},"Marina Bay":{"wavg_finish":10.536,"recent_avg":9.136,"wins":0,"podiums":0,"top5s":0,"top10s":3,"poles":0,"races":5,"dnf_rate":0.111,"avg_q_gap":0.836,"q_samples":5,"pos_gained":-0.5,"pace_2026":0.2045},"Austin":{"wavg_finish":13.558,"recent_avg":13.227,"wins":0,"podiums":0,"top5s":0,"top10s":2,"poles":0,"races":6,"dnf_rate":0.1,"avg_q_gap":1.358,"q_samples":6,"pos_gained":0.33,"pace_2026":0.2045},"Mexico City":{"wavg_finish":18.103,"recent_avg":19.091,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":6,"dnf_rate":0.4,"avg_q_gap":1.56,"q_samples":6,"pos_gained":-3.67,"pace_2026":0.2045},"Interlagos":{"wavg_finish":10.763,"recent_avg":11.5,"wins":0,"podiums":1,"top5s":2,"top10s":3,"poles":0,"races":6,"dnf_rate":0.0,"avg_q_gap":0.88,"q_samples":6,"pos_gained":1.33,"pace_2026":0.2045},"Las Vegas":{"wavg_finish":10.545,"recent_avg":10.545,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":3,"dnf_rate":0.0,"avg_q_gap":1.504,"q_samples":3,"pos_gained":0.33,"pace_2026":0.2045},"Lusail":{"wavg_finish":6.294,"recent_avg":6.773,"wins":0,"podiums":1,"top5s":1,"top10s":4,"poles":0,"races":4,"dnf_rate":0.0,"avg_q_gap":0.746,"q_samples":4,"pos_gained":-0.33,"pace_2026":0.2045},"Yas Marina":{"wavg_finish":9.154,"recent_avg":7.182,"wins":0,"podiums":0,"top5s":0,"top10s":4,"poles":0,"races":6,"dnf_rate":0.1,"avg_q_gap":0.938,"q_samples":6,"pos_gained":1.2,"pace_2026":0.2045}},"STR":{"Albert Park":{"wavg_finish":13.609,"recent_avg":13.222,"wins":0,"podiums":0,"top5s":1,"top10s":4,"poles":0,"races":7,"dnf_rate":0.0,"avg_q_gap":1.283,"q_samples":5,"pos_gained":4.29,"pace_2026":0.1212},"Shanghai":{"wavg_finish":16.471,"recent_avg":15.758,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":5,"dnf_rate":0.0,"avg_q_gap":2.552,"q_samples":5,"pos_gained":2.2,"pace_2026":0.1212},"Suzuka":{"wavg_finish":19.279,"recent_avg":19.525,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":7,"dnf_rate":0.0,"avg_q_gap":2.856,"q_samples":7,"pos_gained":2.0,"pace_2026":0.1212},"Miami":{"wavg_finish":16.357,"recent_avg":16.798,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":5,"dnf_rate":0.0,"avg_q_gap":2.138,"q_samples":5,"pos_gained":-1.4,"pace_2026":0.1212},"Montreal":{"wavg_finish":12.026,"recent_avg":12.0,"wins":0,"podiums":0,"top5s":0,"top10s":4,"poles":0,"races":6,"dnf_rate":0.1,"avg_q_gap":3.416,"q_samples":6,"pos_gained":4.8,"pace_2026":0.1212},"Monaco":{"wavg_finish":14.94,"recent_avg":15.818,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":7,"dnf_rate":0.091,"avg_q_gap":1.968,"q_samples":7,"pos_gained":2.17,"pace_2026":0.1212},"Barcelona":{"wavg_finish":11.588,"recent_avg":11.75,"wins":0,"podiums":0,"top5s":1,"top10s":2,"poles":0,"races":7,"dnf_rate":0.091,"avg_q_gap":1.606,"q_samples":8,"pos_gained":1.5,"pace_2026":0.1212},"Red Bull Ring":{"wavg_finish":12.548,"recent_avg":12.545,"wins":0,"podiums":0,"top5s":0,"top10s":3,"poles":0,"races":10,"dnf_rate":0.071,"avg_q_gap":1.327,"q_samples":8,"pos_gained":0.44,"pace_2026":0.1212},"Silverstone":{"wavg_finish":9.093,"recent_avg":8.591,"wins":0,"podiums":0,"top5s":0,"top10s":5,"poles":0,"races":9,"dnf_rate":0.0,"avg_q_gap":1.843,"q_samples":7,"pos_gained":3.67,"pace_2026":0.1212},"Spa":{"wavg_finish":12.249,"recent_avg":11.909,"wins":0,"podiums":0,"top5s":0,"top10s":3,"poles":0,"races":8,"dnf_rate":0.0,"avg_q_gap":2.338,"q_samples":8,"pos_gained":1.75,"pace_2026":0.1212},"Hungaroring":{"wavg_finish":10.586,"recent_avg":8.636,"wins":0,"podiums":0,"top5s":1,"top10s":4,"poles":0,"races":8,"dnf_rate":0.083,"avg_q_gap":1.135,"q_samples":8,"pos_gained":0.29,"pace_2026":0.1212},"Zandvoort":{"wavg_finish":10.082,"recent_avg":9.818,"wins":0,"podiums":0,"top5s":0,"top10s":2,"poles":0,"races":5,"dnf_rate":0.0,"avg_q_gap":3.319,"q_samples":4,"pos_gained":1.4,"pace_2026":0.1212},"Monza":{"wavg_finish":15.193,"recent_avg":17.864,"wins":0,"podiums":1,"top5s":1,"top10s":3,"poles":0,"races":8,"dnf_rate":0.083,"avg_q_gap":1.7,"q_samples":8,"pos_gained":0.71,"pace_2026":0.1212},"Baku":{"wavg_finish":14.988,"recent_avg":15.364,"wins":0,"podiums":0,"top5s":0,"top10s":3,"poles":0,"races":7,"dnf_rate":0.273,"avg_q_gap":1.845,"q_samples":6,"pos_gained":0.33,"pace_2026":0.1212},"Marina Bay":{"wavg_finish":13.526,"recent_avg":14.909,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":6,"dnf_rate":0.0,"avg_q_gap":2.626,"q_samples":6,"pos_gained":3.8,"pace_2026":0.1212},"Austin":{"wavg_finish":13.024,"recent_avg":11.818,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":7,"dnf_rate":0.091,"avg_q_gap":1.948,"q_samples":7,"pos_gained":0.17,"pace_2026":0.1212},"Mexico City":{"wavg_finish":13.679,"recent_avg":13.727,"wins":0,"podiums":0,"top5s":0,"top10s":0,"poles":0,"races":7,"dnf_rate":0.091,"avg_q_gap":2.402,"q_samples":7,"pos_gained":1.57,"pace_2026":0.1212},"Interlagos":{"wavg_finish":15.196,"recent_avg":14.773,"wins":0,"podiums":0,"top5s":1,"top10s":2,"poles":0,"races":7,"dnf_rate":0.182,"avg_q_gap":1.417,"q_samples":7,"pos_gained":0.0,"pace_2026":0.1212},"Las Vegas":{"wavg_finish":14.091,"recent_avg":14.091,"wins":0,"podiums":0,"top5s":1,"top10s":1,"poles":0,"races":3,"dnf_rate":0.143,"avg_q_gap":3.26,"q_samples":3,"pos_gained":3.67,"pace_2026":0.1212},"Lusail":{"wavg_finish":15.246,"recent_avg":16.591,"wins":0,"podiums":0,"top5s":0,"top10s":1,"poles":0,"races":4,"dnf_rate":0.25,"avg_q_gap":1.766,"q_samples":4,"pos_gained":5.5,"pace_2026":0.1212},"Yas Marina":{"wavg_finish":11.646,"recent_avg":11.273,"wins":0,"podiums":0,"top5s":0,"top10s":4,"poles":0,"races":8,"dnf_rate":0.083,"avg_q_gap":1.366,"q_samples":8,"pos_gained":2.57,"pace_2026":0.1212}}};
+const SEASON_2026 = {"ANT":{"pts":131,"wins":4,"podiums":5,"dnfs":0,"dnf_rate_26":0.0,"avg_finish_26":1.2,"races_26":5},"RUS":{"pts":88,"wins":1,"podiums":2,"dnfs":1,"dnf_rate_26":0.2,"avg_finish_26":6.0,"races_26":5},"LEC":{"pts":75,"wins":0,"podiums":2,"dnfs":0,"dnf_rate_26":0.0,"avg_finish_26":4.0,"races_26":5},"HAM":{"pts":72,"wins":0,"podiums":2,"dnfs":0,"dnf_rate_26":0.0,"avg_finish_26":4.4,"races_26":5},"NOR":{"pts":58,"wins":1,"podiums":3,"dnfs":1,"dnf_rate_26":0.2,"avg_finish_26":7.4,"races_26":5},"PIA":{"pts":48,"wins":0,"podiums":2,"dnfs":0,"dnf_rate_26":0.0,"avg_finish_26":6.2,"races_26":5},"VER":{"pts":43,"wins":1,"podiums":4,"dnfs":0,"dnf_rate_26":0.0,"avg_finish_26":6.0,"races_26":5},"BEA":{"pts":18,"wins":0,"podiums":3,"dnfs":0,"dnf_rate_26":0.0,"avg_finish_26":8.4,"races_26":5},"GAS":{"pts":20,"wins":0,"podiums":4,"dnfs":0,"dnf_rate_26":0.0,"avg_finish_26":9.4,"races_26":5},"LAW":{"pts":16,"wins":0,"podiums":3,"dnfs":0,"dnf_rate_26":0.0,"avg_finish_26":11.8,"races_26":5},"COL":{"pts":15,"wins":0,"podiums":0,"dnfs":0,"dnf_rate_26":0.0,"avg_finish_26":10.8,"races_26":5},"LIN":{"pts":5,"wins":0,"podiums":0,"dnfs":1,"dnf_rate_26":0.2,"avg_finish_26":15.6,"races_26":5},"HAD":{"pts":14,"wins":0,"podiums":0,"dnfs":0,"dnf_rate_26":0.0,"avg_finish_26":7.8,"races_26":5},"SAI":{"pts":6,"wins":0,"podiums":0,"dnfs":0,"dnf_rate_26":0.0,"avg_finish_26":13.8,"races_26":5},"BOR":{"pts":2,"wins":0,"podiums":0,"dnfs":0,"dnf_rate_26":0.0,"avg_finish_26":17.0,"races_26":5},"OCO":{"pts":1,"wins":0,"podiums":0,"dnfs":0,"dnf_rate_26":0.0,"avg_finish_26":11.0,"races_26":5},"ALB":{"pts":1,"wins":0,"podiums":0,"dnfs":1,"dnf_rate_26":0.2,"avg_finish_26":17.0,"races_26":5},"HUL":{"pts":0,"wins":0,"podiums":0,"dnfs":0,"dnf_rate_26":0.0,"avg_finish_26":16.0,"races_26":5},"BOT":{"pts":0,"wins":0,"podiums":0,"dnfs":0,"dnf_rate_26":0.0,"avg_finish_26":18.4,"races_26":5},"PER":{"pts":0,"wins":0,"podiums":0,"dnfs":1,"dnf_rate_26":0.2,"avg_finish_26":19.4,"races_26":5},"ALO":{"pts":0,"wins":0,"podiums":0,"dnfs":1,"dnf_rate_26":0.2,"avg_finish_26":20.8,"races_26":5},"STR":{"pts":0,"wins":0,"podiums":0,"dnfs":0,"dnf_rate_26":0.0,"avg_finish_26":20.6,"races_26":5}};
+const GRID_WIN_RATES = {"1":0.5802,"2":0.2381,"3":0.1173,"4":0.0437,"5":0.0125,"6":0.0312,"7":0.0062,"8":0.0066,"9":0.0064,"10":0.0201,"11":0.0,"12":0.0,"13":0.0,"14":0.0131,"15":0.0,"16":0.0,"17":0.0068,"18":0.0,"19":0.0,"20":0.0,"21":0.001,"22":0.001};
+const GRID_POD_RATES = {"1":0.8704,"2":0.756,"3":0.5988,"4":0.3875,"5":0.1875,"6":0.1375,"7":0.0745,"8":0.0263,"9":0.0191,"10":0.0403,"11":0.0258,"12":0.0199,"13":0.0066,"14":0.0196,"15":0.0197,"16":0.0,"17":0.0137,"18":0.0065,"19":0.0278,"20":0.0268,"21":0.017,"22":0.0139};
+const TEAM_STRENGTH = {"Mercedes":{"pace_bonus":0.22,"rel_factor":0.97,"avg_q_pos":1.875},"Ferrari":{"pace_bonus":0.15,"rel_factor":0.95,"avg_q_pos":4.625},"McLaren":{"pace_bonus":0.13,"rel_factor":0.75,"avg_q_pos":5.125},"Red Bull":{"pace_bonus":0.08,"rel_factor":0.875,"avg_q_pos":7.125},"Alpine":{"pace_bonus":0.045,"rel_factor":0.875,"avg_q_pos":11.0},"Haas":{"pace_bonus":0.04,"rel_factor":0.875,"avg_q_pos":13.0},"RB":{"pace_bonus":0.035,"rel_factor":0.875,"avg_q_pos":12.125},"Williams":{"pace_bonus":0.025,"rel_factor":0.875,"avg_q_pos":15.79},"Audi":{"pace_bonus":0.018,"rel_factor":0.75,"avg_q_pos":12.625},"Aston Martin":{"pace_bonus":0.005,"rel_factor":0.95,"avg_q_pos":19.42},"Cadillac":{"pace_bonus":0.003,"rel_factor":0.875,"avg_q_pos":19.625}};
+const DRIVER_TEAM = {"ANT":"Mercedes","RUS":"Mercedes","LEC":"Ferrari","HAM":"Ferrari","NOR":"McLaren","PIA":"McLaren","VER":"Red Bull","HAD":"Red Bull","BEA":"Haas","OCO":"Haas","GAS":"Alpine","COL":"Alpine","LAW":"RB","LIN":"RB","SAI":"Williams","ALB":"Williams","HUL":"Audi","BOR":"Audi","BOT":"Cadillac","PER":"Cadillac","ALO":"Aston Martin","STR":"Aston Martin"};
+const SC_PROB = {"Montreal":0.95,"Albert Park":0.95,"Interlagos":0.95,"Monaco":0.95,"Silverstone":0.95,"Spa":0.95,"Marina Bay":0.95,"Suzuka":0.95,"Red Bull Ring":0.917,"Shanghai":0.95,"Monza":0.75,"Austin":0.583,"Baku":0.556,"Barcelona":0.583,"Hungaroring":0.5,"Zandvoort":0.6,"Yas Marina":0.417,"Mexico City":0.455,"Lusail":0.75,"Miami":0.6,"Las Vegas":0.333};
+const VSC_PROB = {"Montreal":0.273,"Albert Park":0.455,"Interlagos":0.25,"Monaco":0.417,"Silverstone":0.333,"Spa":0.083,"Marina Bay":0.25,"Suzuka":0.25,"Red Bull Ring":0.333,"Shanghai":0.111,"Monza":0.167,"Austin":0.333,"Baku":0.333,"Barcelona":0.167,"Hungaroring":0.25,"Zandvoort":0.6,"Yas Marina":0.167,"Mexico City":0.545,"Lusail":0.25,"Miami":0.6,"Las Vegas":0.667};
+const ANY_DISRUPTION_PROB = {"Montreal":0.98,"Albert Park":0.98,"Interlagos":0.98,"Monaco":0.98,"Silverstone":0.98,"Spa":0.98,"Marina Bay":0.98,"Suzuka":0.98,"Red Bull Ring":0.98,"Shanghai":0.98,"Monza":0.917,"Austin":0.917,"Baku":0.889,"Barcelona":0.75,"Hungaroring":0.75,"Zandvoort":0.98,"Yas Marina":0.583,"Mexico City":0.98,"Lusail":0.98,"Miami":0.98,"Las Vegas":0.98};
+const SPRINT_WEEKENDS = new Set(['Silverstone', 'Zandvoort', 'Marina Bay']);
+
+const SC_AVG_LAPS = {"Montreal":3.84,"Albert Park":3.26,"Interlagos":4.5,"Monaco":3.8,"Silverstone":3.48,"Spa":2.86,"Marina Bay":3.41,"Suzuka":5.13,"Red Bull Ring":3.5,"Shanghai":3.77,"Monza":4.1,"Austin":4.1,"Baku":3.44,"Barcelona":4.5,"Hungaroring":3.14,"Zandvoort":3.67,"Yas Marina":3.17,"Mexico City":3.2,"Lusail":3.4,"Miami":5.0,"Las Vegas":3.0};
+const VSC_AVG_LAPS = {"Montreal":3.3,"Albert Park":4.0,"Interlagos":2.3,"Monaco":3.8,"Silverstone":2.5,"Spa":2.0,"Marina Bay":4.3,"Suzuka":3.0,"Red Bull Ring":2.5,"Shanghai":3.0,"Monza":2.5,"Austin":2.8,"Baku":3.3,"Barcelona":4.0,"Hungaroring":4.0,"Zandvoort":2.0,"Yas Marina":2.5,"Mexico City":2.8,"Lusail":3.0,"Miami":3.3,"Las Vegas":3.5};
+const SC_WIN_EFFECT = {"1":{"win_sc":0.5354,"win_cln":0.5325,"pod_sc":0.8182,"pod_cln":0.7792},"2":{"win_sc":0.2143,"win_cln":0.2468,"pod_sc":0.6735,"pod_cln":0.7922},"3":{"win_sc":0.1212,"win_cln":0.0909,"pod_sc":0.5455,"pod_cln":0.5584},"4":{"win_sc":0.0202,"win_cln":0.0649,"pod_sc":0.3636,"pod_cln":0.3377},"5":{"win_sc":0.0202,"win_cln":null,"pod_sc":0.1313,"pod_cln":0.2208},"6":{"win_sc":0.0202,"win_cln":0.039,"pod_sc":0.1414,"pod_cln":0.1039},"7":{"win_sc":0.0102,"win_cln":null,"pod_sc":0.0816,"pod_cln":0.0519},"8":{"win_sc":0.0102,"win_cln":null,"pod_sc":0.0306,"pod_cln":0.013},"9":{"win_sc":null,"win_cln":0.013,"pod_sc":null,"pod_cln":0.039},"10":{"win_sc":0.0204,"win_cln":0.013,"pod_sc":0.0408,"pod_cln":0.026},"11":{"win_sc":null,"win_cln":null,"pod_sc":0.0306,"pod_cln":0.013},"12":{"win_sc":null,"win_cln":null,"pod_sc":0.0202,"pod_cln":0.013},"13":{"win_sc":null,"win_cln":null,"pod_sc":0.0103,"pod_cln":null},"14":{"win_sc":0.0204,"win_cln":null,"pod_sc":0.0306,"pod_cln":null},"15":{"win_sc":null,"win_cln":null,"pod_sc":0.0306,"pod_cln":null},"16":{"win_sc":null,"win_cln":null,"pod_sc":null,"pod_cln":null},"17":{"win_sc":0.01,"win_cln":null,"pod_sc":0.01,"pod_cln":0.0132},"18":{"win_sc":null,"win_cln":null,"pod_sc":null,"pod_cln":0.0137},"19":{"win_sc":null,"win_cln":null,"pod_sc":0.0319,"pod_cln":0.0137},"20":{"win_sc":null,"win_cln":null,"pod_sc":0.0274,"pod_cln":0.0182},"21":{"win_sc":null,"win_cln":null,"pod_sc":null,"pod_cln":null},"22":{"win_sc":null,"win_cln":null,"pod_sc":null,"pod_cln":null}};
+const PIT_AVG = {"Albert Park":2.21,"Shanghai":1.57,"Suzuka":1.77,"Miami":1.18,"Montreal":2.04,"Monaco":1.66,"Barcelona":2.09,"Red Bull Ring":1.82,"Silverstone":1.89,"Spa":1.66,"Hungaroring":1.89,"Zandvoort":2.73,"Monza":1.41,"Baku":1.63,"Marina Bay":1.3,"Austin":1.62,"Mexico City":1.44,"Interlagos":2.55,"Las Vegas":1.6,"Lusail":2.47,"Yas Marina":1.43};
+const PACE_RATINGS_2026 = {"ANT":0.9886,"RUS":0.9318,"LEC":0.875,"HAM":0.7955,"NOR":0.8068,"PIA":0.8182,"VER":0.7273,"HAD":0.7159,"BEA":0.4545,"OCO":0.4545,"GAS":0.625,"COL":0.4659,"LAW":0.5114,"LIN":0.4773,"SAI":0.3485,"ALB":0.3068,"HUL":0.5341,"BOR":0.4091,"BOT":0.1591,"PER":0.1477,"ALO":0.2045,"STR":0.1212};
+
+const CIRCUIT_BASE_TIMES = {
+  'Albert Park':   {base:84.5,  q1adj:2.8, q2adj:1.4, laps:58},
+  'Shanghai':      {base:92.2,  q1adj:2.6, q2adj:1.2, laps:56},
+  'Suzuka':        {base:88.1,  q1adj:2.9, q2adj:1.5, laps:53},
+  'Miami':         {base:88.8,  q1adj:2.5, q2adj:1.2, laps:57},
+  'Montreal':      {base:72.4,  q1adj:2.3, q2adj:1.1, laps:70},
+  'Monaco':        {base:72.9,  q1adj:2.1, q2adj:1.0, laps:78},
+  'Barcelona':     {base:76.3,  q1adj:2.4, q2adj:1.2, laps:66},
+  'Red Bull Ring': {base:64.3,  q1adj:2.0, q2adj:1.0, laps:71},
+  'Silverstone':   {base:85.5,  q1adj:2.6, q2adj:1.3, laps:52},
+  'Spa-Francorchamps':{base:103.2,q1adj:3.2,q2adj:1.6,laps:44},
+  'Hungaroring':   {base:74.8,  q1adj:2.2, q2adj:1.1, laps:70},
+  'Zandvoort':     {base:71.2,  q1adj:2.1, q2adj:1.1, laps:72},
+  'Monza':         {base:79.8,  q1adj:2.0, q2adj:1.0, laps:53},
+  'Marina Bay':    {base:99.4,  q1adj:2.8, q2adj:1.4, laps:62},
+  'Baku':          {base:100.3, q1adj:3.0, q2adj:1.5, laps:51},
+  'Austin':        {base:93.7,  q1adj:2.7, q2adj:1.3, laps:56},
+  'Mexico City':   {base:78.2,  q1adj:2.3, q2adj:1.1, laps:71},
+  'Interlagos':    {base:68.9,  q1adj:2.2, q2adj:1.1, laps:71},
+  'Las Vegas':     {base:94.2,  q1adj:2.8, q2adj:1.4, laps:50},
+  'Lusail':        {base:80.4,  q1adj:2.4, q2adj:1.2, laps:57},
+  'Yas Marina':    {base:83.1,  q1adj:2.4, q2adj:1.2, laps:58},
+};
+
+
+// Store the last simulated qualifying results globally for cross-function use
+let _qualiResults = null;
+let _qualiCircuit  = null;
+let _activeQualiSession = 'Q1';
+
+function fmtLapTime(seconds) {
+  const mins = Math.floor(seconds / 60);
+  const secs = (seconds % 60).toFixed(3).padStart(6,'0');
+  return `${mins}:${secs}`;
+}
+
+function simulateQualifying(circuit) {
+  const ct = CIRCUIT_BASE_TIMES[circuit] || {base:85,q1adj:2.5,q2adj:1.2,laps:58};
+  const results = DRIVERS_2026.map(d => {
+    const m    = (MODEL_DATA[d.code]||{})[circuit]||{};
+    const s26  = SEASON_2026[d.code]||{pts:0};
+    // PRIMARY: 2026 actual pace rating from real qualifying data
+    // Cadillac/Aston avg Q19-20 → pace26~0.12-0.16 → gap ~3.0-3.2s from pole
+    // Mercedes avg Q1-2 → pace26~0.93-0.99 → gap ~0.03-0.25s from pole
+    const pace26 = PACE_RATINGS_2026[d.code]??0.5;
+    const baseGapFromPace = (1.0-pace26)*3.5;
+    // SECONDARY: circuit history adjusts for track-specific strengths
+    const histGap   = m.avg_q_gap??baseGapFromPace;
+    const qSamples  = m.q_samples??0;
+    const poleBonus = (m.poles??0)*0.12;
+    const winBonus  = (m.wins??0)*0.06;
+    const histWeight= Math.min(0.45, qSamples*0.06);
+    const adjusted  = Math.max(0.03,
+      (baseGapFromPace*(1-histWeight))+(histGap*histWeight)-poleBonus-winBonus
+    );
+    // Noise: smaller for experienced drivers with more data
+    // Realistic qualifying variance: base ±0.25s always, slightly more for inexperienced drivers
+    const noise = 0.25 + (1-Math.min(0.8,qSamples/10))*0.15;
+    const n = ()=>(Math.random()-0.5)*2*noise;
+    return {
+      code:d.code, name:d.name, team:d.team,
+      q1time: ct.base+(ct.q1adj||2.5)+adjusted+n(),
+      q2time: ct.base+(ct.q2adj||1.2)*0.55+adjusted*0.91+n()*0.8,
+      q3time: ct.base+adjusted*0.84+n()*0.6,
+      finalGap:adjusted, pace26,
+      poles:m.poles??0, wins:m.wins??0, wavg:m.wavg_finish??15,
+      dnfProb:m.dnf_rate??0.12,
+    };
+  });
+  const q1sorted=[...results].sort((a,b)=>a.q1time-b.q1time);
+  q1sorted.forEach((d,i)=>{d.q1pos=i+1;d.q1eliminated=i>=15;});
+  const q1elim=q1sorted.slice(15);  // P16–P22: eliminated in Q1
+  const q2drivers=q1sorted.slice(0,15);
+  const q2sorted=[...q2drivers].sort((a,b)=>a.q2time-b.q2time);
+  q2sorted.forEach((d,i)=>{d.q2pos=i+1;d.q2eliminated=i>=10;});
+  const q2elim=q2sorted.slice(10);  // P11–P15: eliminated in Q2
+  const q3drivers=q2sorted.slice(0,10);
+  const q3sorted=[...q3drivers].sort((a,b)=>a.q3time-b.q3time);
+  q3sorted.forEach((d,i)=>{d.q3pos=i+1;});
+  // finalGrid: Q3 (P1–10) + Q2 elim (P11–15) + Q1 elim (P16–22)
+  const finalGrid=[...q3sorted,...q2elim,...q1elim];
+  finalGrid.forEach((d,i)=>{d.gridPos=i+1;});
+  return {q1sorted,q2sorted,q2elim:q1elim,q3sorted,q3elim:q2elim,finalGrid};
+}
+
+function showQualiSession(session, tabEl) {
+  _activeQualiSession = session;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  if(tabEl) tabEl.classList.add('active');
+  if(!_qualiResults) { document.getElementById('quali-content').innerHTML = '<div style="color:var(--f1-muted);font-size:13px;padding:1rem 0">Run qualifying simulation first.</div>'; return; }
+  renderQualiSession(session, _qualiResults);
+}
+
+function renderQualiSession(session, res) {
+  const el = document.getElementById('quali-content');
+  const ct = CIRCUIT_BASE_TIMES[_qualiCircuit] || {base:85};
+  let drivers, baseKey, label, cutline, cutN;
+
+  if(session === 'Q1') {
+    drivers = res.q1sorted;
+    baseKey = 'q1time';
+    label = 'Q1';
+    cutline = 15;
+    cutN = 'P15→P22 ELIMINATED';
+  } else if(session === 'Q2') {
+    drivers = res.q2sorted.concat(res.q2elim||[]);
+    baseKey = 'q2time';
+    label = 'Q2';
+    cutline = 10;
+    cutN = 'P10→P15 ELIMINATED';
+  } else {
+    drivers = res.q3sorted;
+    baseKey = 'q3time';
+    label = 'Q3';
+    cutline = 0;
+    cutN = '';
+  }
+
+  const pole = session==='Q3' ? res.q3sorted[0] : (session==='Q2' ? res.q2sorted[0] : res.q1sorted[0]);
+  const poleTime = pole ? pole[baseKey] : ct.base;
+
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+      <div style="background:#0f0f0f;border:1px solid var(--f1-border);border-radius:6px;padding:10px">
+        <div style="font-size:10px;color:var(--f1-red);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:2px">${session === 'Q3' ? 'POLE POSITION' : session+' BENCHMARK'}</div>
+        <div style="font-size:20px;font-weight:700;font-family:'Courier New',monospace;color:${session==='Q3'?'var(--f1-gold)':'var(--f1-text)'}">
+          ${fmtLapTime(poleTime)}
+        </div>
+        <div style="font-size:12px;color:var(--f1-muted);margin-top:2px">${pole ? pole.name + ' · ' + pole.team : ''}</div>
+      </div>
+      <div style="background:#0f0f0f;border:1px solid var(--f1-border);border-radius:6px;padding:10px">
+        <div style="font-size:10px;color:var(--f1-muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:2px">${session} SESSION</div>
+        <div style="font-size:13px;font-weight:600;color:var(--f1-text)">${session==='Q1'?'22 drivers · P1–P15 advance':session==='Q2'?'15 drivers · P1–P10 advance':'10 drivers · Pole shootout'}</div>
+        <div style="font-size:11px;color:var(--f1-muted);margin-top:2px">Lap: ${fmtLapTime(ct.base)} base · SC: ${((SC_PROB[_qualiCircuit]||0.5)*100).toFixed(0)}% · VSC: ${((VSC_PROB[_qualiCircuit]||0.25)*100).toFixed(0)}%</div>
+      </div>
+    </div>
+    <div style="font-family:'Courier New',monospace;font-size:12px">
+      ${drivers.map((d,i) => {
+        const laptime = d[baseKey];
+        if(!laptime) return ''; // skip if no time (Q2 elim shown blank)
+        const gap = laptime - poleTime;
+        const isElim = (session==='Q1' && i>=15) || (session==='Q2' && i>=10);
+        const isP1 = i===0;
+        const pColor = isP1 ? 'var(--f1-gold)' : isElim ? '#555' : 'var(--f1-text)';
+        const bgColor = isElim ? '#0d0d0d' : (i<3&&!isElim) ? 'rgba(225,6,0,0.04)' : 'transparent';
+        const border = (i===cutline-1 && cutline>0) ? 'border-bottom:1px dashed #FF9800;margin-bottom:4px;padding-bottom:4px;' : '';
+        const marker = i===cutline ? `<div style="font-size:9px;color:#FF9800;letter-spacing:1px;margin:4px 0 2px">── ${cutN} ──</div>` : '';
+        const lapColor = isP1 ? '#AA00FF' : isElim ? '#555' : gap < 0.5 ? '#4CAF50' : gap < 1.5 ? 'var(--f1-text)' : '#FF9800';
+        return `${marker}<div style="display:flex;align-items:center;gap:8px;padding:5px 0;${border}">
+          <span style="min-width:22px;font-size:12px;font-weight:700;color:${pColor}">${i+1}</span>
+          <span style="width:4px;height:26px;border-radius:2px;background:${TEAM_COLORS[d.team]||'#444'};flex-shrink:0"></span>
+          <span style="min-width:32px;font-size:11px;font-weight:700;color:${pColor}">${d.code}</span>
+          <span style="flex:1;font-size:11px;color:${isElim?'#555':'var(--f1-muted)'};">${d.team}</span>
+          <span style="min-width:90px;font-size:13px;font-weight:700;color:${lapColor};text-align:right">${fmtLapTime(laptime)}</span>
+          <span style="min-width:70px;font-size:11px;color:${isP1?'#AA00FF':isElim?'#555':'var(--f1-muted)'};text-align:right">${isP1?'POLE':isElim?'ELIM':'+'+gap.toFixed(3)+'s'}</span>
+          <span style="font-size:9px;color:#555;min-width:36px;text-align:right">${((MODEL_DATA[d.code]||{})[_qualiCircuit||'']||{}).poles>0?'<span style=\'color:#AA00FF;font-weight:700\'>'+(((MODEL_DATA[d.code]||{})[_qualiCircuit||'']||{}).poles)+'P</span>':''} ${((MODEL_DATA[d.code]||{})[_qualiCircuit||'']||{}).wins>0?'<span style=\'color:var(--f1-gold);font-weight:700\'>'+(((MODEL_DATA[d.code]||{})[_qualiCircuit||'']||{}).wins)+'W</span>':''}</span>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+}
+
+function renderFullGrid(results) {
+  const el = document.getElementById('full-grid-prediction');
+  const circuit = _qualiCircuit || 'Montreal';
+  const titleEl = document.getElementById('full-grid-title');
+  const subEl = document.getElementById('grid-subtitle');
+  const sprintTag = isSprintWeekend(circuit) ? ' · Sprint weekend' : '';
+  if(titleEl) titleEl.textContent = `Full Grid Race Prediction — ${circuit} 2026${sprintTag}`;
+  if(subEl) subEl.textContent = `Grid derived from qualifying simulation. SC prob: ${((SC_PROB[circuit]||0.5)*100).toFixed(0)}% | VSC: ${((VSC_PROB[circuit]||0.25)*100).toFixed(0)}% | Any disruption: ${((ANY_DISRUPTION_PROB[circuit]||0.65)*100).toFixed(0)}%. Win/podium/DNF probabilities are calibrated from recent season form and circuit history.`;
+  if(!results) { el.innerHTML = '<div style="color:var(--f1-muted);font-size:13px">Run qualifying simulation to generate race grid predictions.</div>'; return; }
+
+  const maxWin = Math.max(...results.finalGrid.map(d => mlPredictFromGrid(d.code, circuit, d.gridPos).winProb));
+  el.innerHTML = results.finalGrid.map((d, i) => {
+    const pred = mlPredictFromGrid(d.code, circuit, d.gridPos);
+    const bar = Math.min(100, (pred.winProb / Math.max(maxWin, 0.01)) * 100).toFixed(0);
+    const m   = (MODEL_DATA[d.code]||{})[circuit]||{};
+    const pClass = i===0?'p1':i===1?'p2':i===2?'p3':'';
+    const rowBg  = i===0?'rgba(255,215,0,0.05)':i<3?'rgba(255,215,0,0.02)':'';
+    const posColor = i===0?'var(--f1-gold)':i===1?'#C0C0C0':i===2?'#CD7F32':'var(--f1-text)';
+    const dnfColor = pred.dnfProb > 0.3 ? '#FF5252' : pred.dnfProb > 0.15 ? '#FF9800' : 'var(--f1-muted)';
+    return `<div class="driver-row" style="background:${rowBg};border-radius:4px;padding:8px 4px;">
+      <div class="driver-pos" style="min-width:26px;font-weight:700;color:${posColor}">${i+1}</div>
+      <div class="driver-color" style="background:${TEAM_COLORS[d.team]||'#444'}"></div>
+      <div class="driver-info" style="min-width:140px">
+        <div class="driver-name">${d.name}</div>
+        <div class="driver-team" style="display:flex;gap:6px;align-items:center">
+          ${d.team}
+          ${(m.wins??0)>0?`<span style="font-size:9px;background:var(--f1-gold);color:#000;padding:1px 4px;border-radius:2px;font-weight:700">${m.wins}W</span>`:''}
+          ${(m.poles??0)>0?`<span style="font-size:9px;background:#AA00FF;color:#fff;padding:1px 4px;border-radius:2px;font-weight:700">${m.poles}P</span>`:''}
+          ${isSprintWeekend(circuit)?`<span style="font-size:9px;background:#FFD200;color:#000;padding:1px 4px;border-radius:2px;font-weight:700">SPRINT</span>`:''}
+        </div>
+      </div>
+      <div style="font-size:10px;color:var(--f1-muted);min-width:52px;text-align:center">
+        <div style="letter-spacing:1px;text-transform:uppercase;margin-bottom:1px">Grid</div>
+        <div style="font-size:14px;font-weight:700;color:var(--f1-text)">P${d.gridPos}</div>
+      </div>
+      <div style="font-size:10px;color:var(--f1-muted);min-width:68px;text-align:center">
+        <div style="letter-spacing:1px;text-transform:uppercase;margin-bottom:1px">Exp. Fin</div>
+        <div style="font-size:14px;font-weight:700;color:var(--f1-text)">P${pred.expectedFinish} <span style="font-size:10px;color:var(--f1-muted);font-weight:400">(P${pred.finishLow}–P${pred.finishHigh})</span></div>
+      </div>
+      <div class="prob-bar-wrap">
+        <div class="prob-bar-bg"><div class="prob-bar" style="width:${bar}%;background:${i<3?'var(--f1-gold)':'var(--f1-red)'}"></div></div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;min-width:90px">
+        <div class="prob-val" style="color:${posColor}">${(pred.winProb*100).toFixed(1)}%<span style="font-size:9px;color:var(--f1-muted);font-weight:400"> WIN</span></div>
+        <div style="font-size:10px;color:var(--f1-muted)">${(pred.podProb*100).toFixed(0)}% pod</div>
+      </div>
+      <div style="min-width:68px;text-align:right;font-size:11px">
+        <div style="color:#4CAF50;font-weight:600">${pred.pitStops} stop${pred.pitStops>1?'s':''}</div>
+        <div style="color:${dnfColor};font-size:10px">DNF ${(pred.dnfProb*100).toFixed(0)}%</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function isSprintWeekend(circuit) {
+  return SPRINT_WEEKENDS.has(circuit);
+}
+
+function makeSprintLabel(circuit) {
+  return isSprintWeekend(circuit) ? 'Sprint weekend' : 'Standard weekend';
+}
+
+function updateSprintStatusBanner(circuit) {
+  const el = document.getElementById('sprint-status-banner');
+  const inner = document.getElementById('sprint-status-inner');
+  if(!el || !inner) return;
+  if(!isSprintWeekend(circuit)) {
+    el.style.display = 'none';
+    inner.innerHTML = '';
+    return;
+  }
+  el.style.display = 'block';
+  inner.innerHTML = `
+    <span class="badge badge-sc">SPRINT WEEKEND</span>
+    <span style="font-size:13px;color:var(--f1-text)">Sprint qualifying and sprint race predictions are enabled for <strong>${circuit}</strong>.</span>
+    <span style="font-size:12px;color:var(--f1-muted)">Sections below will show SQ and SR forecasts automatically.</span>
+  `;
+}
+
+function simulateSprintQualifying(circuit) {
+  const ct = CIRCUIT_BASE_TIMES[circuit] || {base:85,q1adj:2.5,q2adj:1.2,laps:58};
+  const results = DRIVERS_2026.map(d => {
+    const m    = (MODEL_DATA[d.code]||{})[circuit]||{};
+    const s26  = SEASON_2026[d.code]||{pts:0};
+    const pace26 = PACE_RATINGS_2026[d.code]??0.5;
+    const baseGapFromPace = (1.0-pace26)*3.2;
+    const histGap   = m.avg_q_gap??baseGapFromPace;
+    const qSamples  = m.q_samples??0;
+    const poleBonus = (m.poles??0)*0.10;
+    const winBonus  = (m.wins??0)*0.04;
+    const histWeight= Math.min(0.38, qSamples*0.045);
+    const formBias   = Math.min(0.28, (s26.pts/100)*0.18);
+    const adjusted  = Math.max(0.03,
+      (baseGapFromPace*(1-histWeight))+(histGap*histWeight)-poleBonus-winBonus-formBias
+    );
+    const noise = 0.25 + (1-Math.min(0.7,qSamples/10))*0.15;
+    const n = ()=>(Math.random()-0.5)*2*noise;
+    return {
+      code:d.code, name:d.name, team:d.team,
+      q1time: ct.base+(ct.q1adj||2.5)+adjusted+n(),
+      q2time: ct.base+(ct.q2adj||1.2)*0.55+adjusted*0.90+n()*0.8,
+      q3time: ct.base+adjusted*0.82+n()*0.6,
+      finalGap:adjusted, pace26,
+      poles:m.poles??0, wins:m.wins??0, wavg:m.wavg_finish??15,
+      dnfProb:m.dnf_rate??0.12,
+    };
+  });
+  const q1sorted=[...results].sort((a,b)=>a.q1time-b.q1time);
+  q1sorted.forEach((d,i)=>{d.q1pos=i+1;d.q1eliminated=i>=15;});
+  const q1elim=q1sorted.slice(15);
+  const q2drivers=q1sorted.slice(0,15);
+  const q2sorted=[...q2drivers].sort((a,b)=>a.q2time-b.q2time);
+  q2sorted.forEach((d,i)=>{d.q2pos=i+1;d.q2eliminated=i>=10;});
+  const q2elim=q2sorted.slice(10);
+  const q3drivers=q2sorted.slice(0,10);
+  const q3sorted=[...q3drivers].sort((a,b)=>a.q3time-b.q3time);
+  q3sorted.forEach((d,i)=>{d.q3pos=i+1;});
+  const finalGrid=[...q3sorted, ...q2elim, ...q1elim];
+  finalGrid.forEach((d,i)=>{d.gridPos=i+1;});
+  return {q1sorted,q2sorted,q2elim,q3sorted,finalGrid};
+}
+
+function simulateSprintRace(circuit, sprintQuali) {
+  const grid = (sprintQuali && sprintQuali.finalGrid) ? [...sprintQuali.finalGrid] : simulateSprintQualifying(circuit).finalGrid;
+  const raced = grid.map(d => {
+    const pred = mlPredictFromGrid(d.code, circuit, d.gridPos, { sprintMode: true });
+    const sprintPush = (PACE_RATINGS_2026[d.code]??0.5) * 0.8 + Math.random()*0.05;
+    return {
+      ...d,
+      sprintScore: pred.winProb * 2.2 + pred.podProb * 0.8 - pred.dnfProb * 1.4 + sprintPush,
+      sprintPred: pred,
+    };
+  }).sort((a,b) => {
+    if (Math.abs((b.sprintScore||0) - (a.sprintScore||0)) > 1e-6) return (b.sprintScore||0) - (a.sprintScore||0);
+    return (a.gridPos||99) - (b.gridPos||99);
+  });
+
+  raced.forEach((d,i)=>{ d.finishPos = i+1; });
+  return {finalGrid: raced};
+}
+
+function renderCompactPredictionRows(targetId, rows, circuit, sprintMode, labelPrefix) {
+  const el = document.getElementById(targetId);
+  if(!el) return;
+  if(!rows || !rows.length) {
+    el.innerHTML = '<div style="color:var(--f1-muted);font-size:13px">No prediction data available.</div>';
+    return;
+  }
+
+  const topRows = rows.slice(0, 10);
+  const maxWin = Math.max(...topRows.map(d => mlPredictFromGrid(d.code, circuit, d.gridPos, { sprintMode }).winProb), 0.01);
+
+  el.innerHTML = topRows.map((d, i) => {
+    const pred = mlPredictFromGrid(d.code, circuit, d.gridPos, { sprintMode });
+    const bar = Math.min(100, (pred.winProb / maxWin) * 100).toFixed(0);
+    const posColor = i===0?'var(--f1-gold)':i===1?'#C0C0C0':i===2?'#CD7F32':'var(--f1-text)';
+    const dnfColor = pred.dnfProb > 0.3 ? '#FF5252' : pred.dnfProb > 0.15 ? '#FF9800' : 'var(--f1-muted)';
+    const range = pred.finishLow && pred.finishHigh ? `P${pred.expectedFinish} (P${pred.finishLow}–P${pred.finishHigh})` : `P${pred.expectedFinish}`;
+    return `<div class="driver-row" style="padding:8px 4px">
+      <div class="driver-pos" style="min-width:26px;font-weight:700;color:${posColor}">${i+1}</div>
+      <div class="driver-color" style="background:${TEAM_COLORS[d.team]||'#444'}"></div>
+      <div class="driver-info" style="min-width:140px">
+        <div class="driver-name">${d.name}</div>
+        <div class="driver-team" style="display:flex;gap:6px;align-items:center">
+          ${d.team}
+          ${sprintMode ? '<span class="badge badge-sc">Sprint</span>' : ''}
+        </div>
+      </div>
+      <div style="font-size:10px;color:var(--f1-muted);min-width:52px;text-align:center">
+        <div style="letter-spacing:1px;text-transform:uppercase;margin-bottom:1px">${labelPrefix}</div>
+        <div style="font-size:14px;font-weight:700;color:var(--f1-text)">P${d.gridPos}</div>
+      </div>
+      <div style="font-size:10px;color:var(--f1-muted);min-width:68px;text-align:center">
+        <div style="letter-spacing:1px;text-transform:uppercase;margin-bottom:1px">Exp. Fin</div>
+        <div style="font-size:14px;font-weight:700;color:var(--f1-text)">${range}</div>
+      </div>
+      <div class="prob-bar-wrap">
+        <div class="prob-bar-bg"><div class="prob-bar" style="width:${bar}%;background:${i<3?'var(--f1-gold)':'var(--f1-red)'}"></div></div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;min-width:90px">
+        <div class="prob-val" style="color:${posColor}">${(pred.winProb*100).toFixed(1)}%<span style="font-size:9px;color:var(--f1-muted);font-weight:400"> WIN</span></div>
+        <div style="font-size:10px;color:var(--f1-muted)">${(pred.podProb*100).toFixed(0)}% pod</div>
+      </div>
+      <div style="min-width:68px;text-align:right;font-size:11px">
+        <div style="color:#4CAF50;font-weight:600">${pred.pitStops} stop${pred.pitStops>1?'s':''}</div>
+        <div style="color:${dnfColor};font-size:10px">DNF ${(pred.dnfProb*100).toFixed(0)}%</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderSprintWeekendSection(circuit, sprintQuali, sprintRace) {
+  const el = document.getElementById('sprint-weekend-section');
+  if(!el) return;
+  if(!isSprintWeekend(circuit)) {
+    el.style.display = 'none';
+    el.innerHTML = '';
+    return;
+  }
+
+  el.style.display = 'block';
+  const qRows = sprintQuali ? sprintQuali.finalGrid : [];
+  const rRows = sprintRace ? sprintRace.finalGrid : [];
+  const pole = qRows[0];
+  const sprintWinner = rRows[0];
+
+  el.innerHTML = `
+    <div class="card-title">Sprint Weekend Prediction — ${circuit}</div>
+    <div style="font-size:11px;color:var(--f1-muted);margin:-0.5rem 0 1rem">This block appears only for Silverstone, Zandvoort, and Marina Bay. Humans love hiding the interesting part under a mountain of other cards.</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:1rem">
+      <div class="pred-cell">
+        <div class="pred-cell-label">Sprint Pole</div>
+        <div class="pred-cell-val win">${pole ? pole.name : 'N/A'}</div>
+      </div>
+      <div class="pred-cell">
+        <div class="pred-cell-label">Sprint Winner</div>
+        <div class="pred-cell-val podium">${sprintWinner ? sprintWinner.name : 'N/A'}</div>
+      </div>
+      <div class="pred-cell">
+        <div class="pred-cell-label">Weekend Type</div>
+        <div class="pred-cell-val safe">${makeSprintLabel(circuit)}</div>
+      </div>
+    </div>
+
+    <div class="grid-2" style="gap:16px">
+      <div>
+        <div class="section-title">Sprint Qualifying Grid</div>
+        <div id="sprint-quali-content"></div>
+      </div>
+      <div>
+        <div class="section-title">Sprint Race Forecast</div>
+        <div id="sprint-race-content"></div>
+      </div>
+    </div>
+  `;
+
+  renderCompactPredictionRows('sprint-quali-content', qRows, circuit, true, 'SQ');
+  renderCompactPredictionRows('sprint-race-content', rRows, circuit, true, 'SR');
+}
+
+
+function mlPredictFromGrid(driver, circuit, gridPos, opts = {}) {
+  const m     = (MODEL_DATA[driver]||{})[circuit]||{};
+  const s26   = SEASON_2026[driver]||{pts:0,avg_finish_26:15};
+  const ts    = TEAM_STRENGTH[DRIVER_TEAM[driver]||'']||{pace_bonus:0.005,rel_factor:0.87};
+  const pace26= PACE_RATINGS_2026[driver]??0.5;
+  // Grid-calibrated base rates from real 2018-2026 data
+  const gridWin=GRID_WIN_RATES[String(gridPos)]??Math.max(0.001,0.53*Math.pow(0.72,gridPos-1));
+  const gridPod=GRID_POD_RATES[String(gridPos)]??Math.max(0.003,0.87*Math.pow(0.82,gridPos-1));
+  // Circuit affinity
+  const wavg  =m.wavg_finish??(22-pace26*20);
+  const recent=m.recent_avg??wavg;
+  const wins  =m.wins??0; const podiums=m.podiums??0;
+  const poles =m.poles??0;
+  const avgField=11.5;
+  const affRace  =Math.max(0.1,Math.min(2.5,avgField/Math.max(wavg,1)));
+  const affRecent=Math.max(0.1,Math.min(2.5,avgField/Math.max(recent,1)));
+  const ciAff=affRace*0.5+affRecent*0.5;
+  const winBonus=Math.min(0.35,wins*0.10+poles*0.05);
+  const podBonus=Math.min(0.40,podiums*0.07+wins*0.08);
+  const form26=Math.min(0.28,(s26.pts/100)*0.28);
+  // 2026 pace: correctly penalises Cadillac/Aston (pace26~0.12-0.20)
+  // and rewards Mercedes/Ferrari (pace26~0.80-0.99)
+  const paceAdj=(pace26-0.5)*0.10;
+  const noise=()=>(Math.random()-0.5)*0.08;
+  const winProb=Math.min(0.92,Math.max(0.002,
+    gridWin*(0.55+ciAff*0.45)+winBonus+form26*0.14+paceAdj+noise()
+  ));
+  const podProb=Math.min(0.95,Math.max(0.006,
+    gridPod*(0.50+ciAff*0.50)+podBonus+form26*0.10+paceAdj+noise()
+  ));
+  const scBase=SC_PROB[circuit]??0.4;
+  const vscBase=VSC_PROB[circuit]??0.25;
+  const anyDisr=ANY_DISRUPTION_PROB[circuit]??0.65;
+  // Under high SC probability circuits, field equalises slightly
+  const scEqualiseFactor=anyDisr>0.80?1.06:anyDisr>0.65?1.03:1.0;
+  const dnfProb=Math.min(0.70,Math.max(0.03,
+    (m.dnf_rate??0.12)*(ts.rel_factor??0.87)+(scBase-0.3)*0.04+noise()*0.5
+  ));
+  // Expected finish: grid pos is the single strongest predictor on race day.
+  // Blend grid position with 2026 current-season avg, circuit history (weighted
+  // by sample size so new/thin data doesn't dominate), and a pace-implied floor.
+  const raceSamples = m.races ?? 0;
+  const histWeight  = Math.min(0.25, raceSamples * 0.025); // max 25% at 10+ races
+  const form26Fin   = s26.avg_finish_26 ?? (22 - pace26 * 20);
+  const histFin     = (wavg * 0.6 + recent * 0.4);          // circuit history blend
+  const paceFloor   = Math.max(1, 22 - pace26 * 21);        // pure pace implied finish
+  // Grid pos carries 50%, 2026 form 30%, circuit history (scaled) up to 20%
+  const rawExp =
+    gridPos * 0.50 +
+    form26Fin * 0.30 +
+    histFin * histWeight +
+    paceFloor * Math.max(0, 0.20 - histWeight);
+  const expFinish = Math.min(22, Math.max(1, Math.round(rawExp)));
+  // Confidence range: tighter for top drivers with lots of data, wider for tail
+  const spread = Math.max(1, Math.round(2.5 + (1 - pace26) * 4 - raceSamples * 0.06));
+  const finishLow  = Math.max(1,  expFinish - spread);
+  const finishHigh = Math.min(22, expFinish + spread);
+  return {winProb, podProb, dnfProb, scProb: scBase,
+          expectedFinish: expFinish, finishLow, finishHigh,
+          pitStops: Math.round(PIT_AVG[circuit] ?? 1.8)};
+}
+
+function runFullPrediction() {
+  const circuit = document.getElementById('pred-circuit').value;
+  _qualiCircuit = circuit;
+  _qualiResults = simulateQualifying(circuit);
+  _activeQualiSession = 'Q1';
+  updateSprintStatusBanner(circuit);
+
+  // Update title
+  const titleEl = document.getElementById('quali-title');
+  if(titleEl) titleEl.textContent = `Qualifying Simulation — ${circuit}`;
+
+  // Reset tabs
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  const t1 = document.getElementById('tab-q1');
+  if(t1) t1.classList.add('active');
+
+  // Render Q1 by default
+  renderQualiSession('Q1', _qualiResults);
+
+  // Render race grid from final qualifying order
+  renderFullGrid(_qualiResults);
+
+  // Sprint weekends get their own Saturday forecast.
+  const sprintQuali = isSprintWeekend(circuit) ? simulateSprintQualifying(circuit) : null;
+  const sprintRace = isSprintWeekend(circuit) ? simulateSprintRace(circuit, sprintQuali) : null;
+  renderSprintWeekendSection(circuit, sprintQuali, sprintRace);
+}
+
+
+function loadRaceResult(round) {
+  const results = RACE_RESULTS[round];
+  if(!results) return;
+  const names = {1:'Australian',2:'Chinese',3:'Japanese',4:'Miami',5:'Canadian'};
+  alert(`Round ${round} — ${names[round]} GP\n\n` +
+    results.map(r => `P${r.f}: ${r.d} (${r.t}) — Grid P${r.g} — ${r.p} pts`).join('\n'));
+}
+
+function renderChampionship() {
+  const drivers = getDriverStandings();
+  const constructors = getConstructorsFromStandings();
+  const dc = document.getElementById('drivers-champ');
+  const cc = document.getElementById('constructors-champ');
+
+  if (dc) {
+    dc.innerHTML = drivers.map((d,i) => `
+      <div class="driver-row">
+        <div class="driver-pos ${i===0?'p1':i===1?'p2':i===2?'p3':''}">${i+1}</div>
+        <div class="driver-color" style="background:${TEAM_COLORS[d.team]||'#444'}"></div>
+        <div class="driver-info">
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:14px;font-weight:600">${d.name}</span>
+            ${d.wins>0?`<span class="badge badge-p1">${d.wins}W</span>`:''}
+          </div>
+          <div class="driver-team">${d.team}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:16px;font-weight:700">${d.pts}</div>
+          <div style="font-size:11px;color:var(--f1-muted)">${d.podiums} pods</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  if (cc && constructors.length) {
+    const maxC = constructors[0].pts;
+    cc.innerHTML = constructors.map((c,i) => `
+      <div class="driver-row">
+        <div class="driver-pos ${i===0?'p1':i===1?'p2':i===2?'p3':''}">${i+1}</div>
+        <div class="driver-color" style="background:${TEAM_COLORS[c.name]||'#444'}"></div>
+        <div class="driver-info">
+          <div style="font-size:14px;font-weight:600">${c.name}</div>
+          <div class="championship-bar" style="background:${TEAM_COLORS[c.name]||'#444'};width:${c.pts>0?(c.pts/maxC*100).toFixed(0):4}%;height:4px;border-radius:2px;margin-top:4px"></div>
+        </div>
+        <div style="font-size:16px;font-weight:700">${c.pts}</div>
+      </div>
+    `).join('');
+  }
+}
+
+function renderSchedule() {
+  const el = document.getElementById('schedule-grid');
+  el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">` +
+    SCHEDULE_2026.map(r => {
+      const sprintBadge = isSprintWeekend(r.circuit) ? `<span class="badge badge-sc" style="margin-top:8px">Sprint weekend</span>` : '';
+      return `
+      <div class="race-card ${r.done ? 'current' : ''}">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div class="race-round">R${r.r}</div>
+          <span style="font-size:20px">${r.country}</span>
+        </div>
+        <div class="race-name">${r.name}</div>
+        <div class="race-date">${r.date} · ${r.circuit}</div>
+        ${sprintBadge}
+        ${r.done
+          ? `<div style="margin-top:8px"><span class="badge badge-p1">✓ Winner: ${r.winner}</span></div>`
+          : `<div style="margin-top:8px;font-size:11px;color:var(--f1-muted)">⏳ Upcoming</div>`
+        }
+      </div>`;
+    }).join('') + '</div>';
+}
+
+
+function showPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const pg = document.getElementById('page-' + id);
+  if(pg) pg.classList.add('active');
+  if(btn) btn.classList.add('active');
+  if(id === 'standings') renderChampionship();
+  if(id === 'schedule')  renderSchedule();
+  if(id === 'predictions') runFullPrediction();
+}
+
+const RACE_META = {
+  1: { name: 'Australian GP', flag: '\u{1F1E6}\u{1F1FA}' },
+  2: { name: 'Chinese GP', flag: '\u{1F1E8}\u{1F1F3}' },
+  3: { name: 'Japanese GP', flag: '\u{1F1EF}\u{1F1F5}' },
+  4: { name: 'Miami GP', flag: '\u{1F1FA}\u{1F1F8}' },
+  5: { name: 'Canadian GP', flag: '\u{1F1E8}\u{1F1E6}' },
+};
+
+function getLatestRound() {
+  return Math.max(...Object.keys(RACE_RESULTS).map(Number));
+}
+
+function driverName(code) {
+  const d = DRIVERS_2026.find(x => x.code === code);
+  return d ? d.name : code;
+}
+
+function driverTeam(code) {
+  const d = DRIVERS_2026.find(x => x.code === code);
+  return d ? d.team : '';
+}
+
+function latestRaceAnalysis() {
+  const round = getLatestRound();
+  const results = [...(RACE_RESULTS[round] || [])];
+  results.sort((a, b) => a.f - b.f);
+  const podium = results.slice(0, 3);
+  const movers = [...results].map(r => ({ ...r, move: (r.g || 0) - (r.f || 0) }));
+  const bestMover = movers.reduce((best, cur) => (cur.move > (best?.move ?? -999) ? cur : best), null);
+  const worstDrop = movers.reduce((worst, cur) => (cur.move < (worst?.move ?? 999) ? cur : worst), null);
+  const scored = results.filter(r => (r.p || 0) > 0).length;
+  const totalPts = results.reduce((sum, r) => sum + (r.p || 0), 0);
+  return { round, results, podium, bestMover, worstDrop, scored, totalPts };
+}
+
+function getDriverStandings() {
+  return [...DRIVERS_2026].sort((a, b) => b.pts - a.pts || b.wins - a.wins || b.podiums - a.podiums);
+}
+
+function getConstructorsFromStandings() {
+  const totals = {};
+  getDriverStandings().forEach(d => {
+    if (!totals[d.team]) totals[d.team] = { name: d.team, pts: 0, wins: 0, podiums: 0 };
+    totals[d.team].pts += d.pts || 0;
+    totals[d.team].wins += d.wins || 0;
+    totals[d.team].podiums += d.podiums || 0;
+  });
+  return Object.values(totals).sort((a, b) => b.pts - a.pts || b.wins - a.wins || b.podiums - a.podiums);
+}
+
+function getNextWeekend() {
+  const fallbackAbuDhabi = { r: 22, name: 'Abu Dhabi GP', date: 'TBD', circuit: 'Yas Marina', country: '\u{1F1E6}\u{1F1EA}', sprint: false, done: false };
+  if (typeof SCHEDULE_2026 !== 'undefined' && Array.isArray(SCHEDULE_2026)) {
+    const next = SCHEDULE_2026.find(r => !r.done);
+    if (next) return next;
+    return SCHEDULE_2026[SCHEDULE_2026.length - 1] || fallbackAbuDhabi;
+  }
+  return fallbackAbuDhabi;
+}
+
+function renderMiniBarList(targetId, rows, valueKey, labelKey, subKey, maxValue, accentForTop = true) {
+  const el = document.getElementById(targetId);
+  if (!el) return;
+  const max = maxValue || Math.max(...rows.map(r => r[valueKey] || 0), 1);
+  el.innerHTML = `
+    <div class="mini-list">
+      ${rows.map((r, idx) => {
+        const val = r[valueKey] || 0;
+        const pct = Math.max(2, (val / max) * 100);
+        return `
+          <div class="mini-row">
+            <div class="mini-main" style="flex:1">
+              <div class="mini-rank">${idx + 1}</div>
+              <div style="min-width:0;flex:1">
+                <div class="mini-name">${r[labelKey]}</div>
+                ${subKey ? `<div class="mini-sub">${typeof subKey === 'function' ? subKey(r) : r[subKey]}</div>` : ''}
+                <div class="bar-wrap">
+                  <div class="bar-bg"><div class="bar-fill" style="width:${pct}%;${r._color ? `background:${r._color};` : accentForTop && idx===0 ? 'background:var(--f1-gold);' : idx===1 ? 'background:#C0C0C0;' : idx===2 ? 'background:#CD7F32;' : ''}"></div></div>
+                </div>
+              </div>
+            </div>
+            <div class="mini-value">${val}</div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function renderDashboard() {
+  const drivers = getDriverStandings();
+  const constructors = getConstructorsFromStandings();
+  const latest = latestRaceAnalysis();
+  const latestMeta = RACE_META[latest.round] || { name: `Round ${latest.round}`, flag: '\u{1F3C1}' };
+  const nextRace = getNextWeekend();
+  const nextSprint = nextRace ? isSprintWeekend(nextRace.circuit) : false;
+  const nextLabel = nextRace ? `${nextRace.name} \u00b7 ${nextRace.date}` : 'Abu Dhabi GP \u00b7 04 - 06 Dec';
+  const nextWeekendLabel = nextRace ? (nextSprint ? 'Sprint weekend' : 'Standard weekend') : 'No scheduled race';
+  const gapToP2 = drivers.length > 1 ? drivers[0].pts - drivers[1].pts : 0;
+  const gapToP3 = drivers.length > 2 ? drivers[0].pts - drivers[2].pts : 0;
+  const bestForm = [...drivers].sort((a, b) => (b.wins + b.podiums) - (a.wins + a.podiums))[0];
+  const avgTop10 = (latest.results.reduce((s, r) => s + (r.p || 0), 0) / Math.max(1, latest.results.filter(r => (r.p || 0) > 0).length)).toFixed(1);
+
+  const kpis = document.getElementById('dashboard-kpis');
+  if (kpis) {
+    kpis.innerHTML = `
+      <div class="dash-metric accent">
+        <div class="metric-label">Championship Leader</div>
+        <div class="metric-value">${drivers[0].name}</div>
+        <div class="metric-sub">${drivers[0].pts} pts \u00b7 +${gapToP2} to P2</div>
+      </div>
+      <div class="dash-metric">
+        <div class="metric-label">Next Race</div>
+        <div class="metric-value" style="font-size:20px">${nextRace ? nextRace.name : 'Done'}</div>
+        <div class="metric-sub">${nextLabel}${nextRace ? ` \u00b7 ${nextWeekendLabel}` : ''}</div>
+      </div>
+      <div class="dash-metric">
+        <div class="metric-label">Latest Winner</div>
+        <div class="metric-value" style="font-size:20px">${latest.podium[0] ? driverName(latest.podium[0].d) : 'N/A'}</div>
+        <div class="metric-sub">${latestMeta.name} \u00b7 ${(() => { const w = DRIVERS_2026.find(x => x.code === (latest.podium[0]?.d)); return w ? w.pts + ' pts in championship' : ''; })()}</div>
+      </div>
+      <div class="dash-metric">
+        <div class="metric-label">Form Leader</div>
+        <div class="metric-value" style="font-size:20px">${bestForm.name}</div>
+        <div class="metric-sub">${bestForm.wins} wins \u00b7 ${bestForm.podiums} podiums \u00b7 gap to P3 ${gapToP3}</div>
+      </div>
+    `;
+  }
+
+  const banner = document.getElementById('dashboard-sprint-banner');
+  const bannerInner = document.getElementById('dashboard-sprint-inner');
+  if (banner && bannerInner) {
+    if (nextSprint && nextRace) {
+      banner.style.display = 'block';
+      bannerInner.innerHTML = `
+        <span class="badge badge-sc">SPRINT WEEKEND</span>
+        <span style="font-size:13px;color:var(--f1-text)"><strong>${nextRace.name}</strong> is one of the sprint rounds.</span>
+        <span class="dash-chip">Sprint quali enabled</span>
+        <span class="dash-chip">Sprint race enabled</span>
+        <span class="dash-chip">${nextRace.circuit}</span>
+      `;
+    } else {
+      banner.style.display = 'none';
+      bannerInner.innerHTML = '';
+    }
+  }
+
+  const latestBox = document.getElementById('latest-race-dashboard');
+  if (latestBox) {
+    const pole = latest.results.find(r => r.f === 1) || latest.results[0];
+    const best = latest.bestMover;
+    const worst = latest.worstDrop;
+    latestBox.innerHTML = `
+      <div class="insight-box" style="margin-bottom:12px">
+        <div class="insight-title">${latestMeta.name} \u00b7 Round ${latest.round}</div>
+        <div class="podium-display">
+          ${[1,0,2].map(slot => {
+            const r = latest.podium[slot];
+            const name = r ? driverName(r.d) : '—';
+            const team = r ? (DRIVERS_2026.find(x=>x.code===r.d)?.team||'') : '';
+            const color = TEAM_COLORS[team] || '#888';
+            const heights = {0:96, 1:72, 2:56};
+            const bgs = {0:'#FFD700', 1:'#C0C0C0', 2:'#CD7F32'};
+            const labels = {0:1, 1:2, 2:3};
+            return `
+              <div class="podium-block">
+                <div class="podium-stand" style="background:${bgs[slot]};width:88px;height:${heights[slot]}px;color:#111;font-size:28px">${labels[slot]}</div>
+                <div class="podium-driver">${name}</div>
+                <div class="podium-team-dot" style="background:${color}"></div>
+              </div>`;
+          }).join('')}
+        </div>
+      </div>
+      <div class="info-list">
+        <div><span>Race winner</span><span>${pole ? driverName(pole.d) : 'N/A'}</span></div>
+        <div><span>Fastest lap</span><span>${(() => { const fl = latest.results.find(r => r.fl); return fl ? driverName(fl.d) : driverName(latest.results[0]?.d); })()}</span></div>
+        <div><span>Best mover</span><span>${latest.bestMover ? `${driverName(latest.bestMover.d)} +${latest.bestMover.move}` : 'N/A'}</span></div>
+        <div><span>Worst drop</span><span>${worst ? `${driverName(worst.d)} ${worst.move <= 0 ? worst.move : `+${worst.move}`}` : 'N/A'}</span></div>
+      </div>
+    `;
+  }
+
+  const history = document.getElementById('race-history');
+  if (history) {
+    const completed = [...SCHEDULE_2026].filter(r => r.done);
+    history.innerHTML = completed.map((r) => `
+      <div class="race-card current" onclick="loadRaceResult(${r.r})" style="cursor:pointer">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+          <div>
+            <div class="race-round" style="font-size:10px;letter-spacing:1px">ROUND ${r.r}</div>
+            <div class="race-name">${r.name}</div>
+            <div class="race-date" style="margin-top:4px">${r.date || ''}</div>
+          </div>
+          <span style="font-size:20px">${r.country || '\u{1F3C1}'}</span>
+        </div>
+        <div style="margin-top:8px">
+          <span class="badge badge-p1">Winner: ${r.winner || (RACE_RESULTS[r.r]?.[0] ? driverName(RACE_RESULTS[r.r][0].d) : 'TBD')}</span>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  const driversColored = drivers.slice(0, 8).map(d => ({...d, _color: TEAM_COLORS[d.team] || '#888'}));
+  const constructorsColored = constructors.slice(0, 6).map(c => ({...c, _color: TEAM_COLORS[c.name] || '#888'}));
+  renderMiniBarList('champ-bars', driversColored, 'pts', 'name', d => `${d.team} \u00b7 ${d.wins}W \u00b7 ${d.podiums}P`, drivers[0].pts);
+  renderMiniBarList('constructor-bars', constructorsColored, 'pts', 'name', d => `${d.wins}W \u00b7 ${d.podiums}P`, constructors[0].pts);
+
+
+
+  const weekendEl = document.getElementById('upcoming-weekend');
+  if (weekendEl) {
+    if (nextRace) {
+      weekendEl.innerHTML = `
+        <div class="insight-box">
+          <div class="insight-title">${nextWeekendLabel}</div>
+          <div style="font-size:22px;font-weight:800;line-height:1.05;margin-bottom:6px">${nextRace.name}</div>
+          <div style="color:var(--f1-muted);font-size:13px">${nextRace.date} \u00b7 ${nextRace.circuit}</div>
+          <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px">
+            <span class="badge ${nextSprint ? 'badge-sc' : 'badge-p1'}">${nextSprint ? 'Sprint enabled' : 'No sprint'}</span>
+            <span class="dash-chip">${nextRace.country || ''}</span>
+            <span class="dash-chip">Round ${nextRace.r}</span>
+          </div>
+          <div style="margin-top:12px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px">
+            <div class="insight-box" style="padding:.85rem">
+              <div class="insight-title" style="margin-bottom:6px">What to watch</div>
+              <div style="font-size:14px;font-weight:700">${nextSprint ? 'Sprint quali + sprint race' : 'Practice + quali'}</div>
+            </div>
+            <div class="insight-box" style="padding:.85rem">
+              <div class="insight-title" style="margin-bottom:6px">Track type</div>
+              <div style="font-size:14px;font-weight:700">${CIRCUIT_DATA[nextRace.circuit]?.type || 'unknown'}</div>
+            </div>
+            <div class="insight-box" style="padding:.85rem">
+              <div class="insight-title" style="margin-bottom:6px">Overtake risk</div>
+              <div style="font-size:14px;font-weight:700">${CIRCUIT_DATA[nextRace.circuit]?.sc ? `${Math.round(CIRCUIT_DATA[nextRace.circuit].sc * 100)}%` : 'n/a'}</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+  }
+}
+
+renderDashboard();
+runFullPrediction();
+</script>
+</body>
+</html>
