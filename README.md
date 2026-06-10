@@ -20,5 +20,8 @@ A real-time Formula 1 analytics and prediction platform for the 2026 season.
 - XGBoost-inspired prediction model (client-side)
 - Anthropic Claude API (AI Race Engineer)
 
+## Live Site
+🌐 [f1-intelligence on GitHub Pages](https://Kavy1206.github.io/f1-intelligence/)
 
-*Site Updated after every race weekend*
+---
+*Updated after every race weekend*
