@@ -21,7 +21,7 @@ A real-time Formula 1 analytics and prediction platform for the 2026 season.
 - Anthropic Claude API (AI Race Engineer)
 
 ## Live Site
-🌐 [f1-intelligence on Live Demo](https://Kavy1206.github.io/f1-intelligence/)
+🌐 [f1-intelligence Live Demo](https://Kavy1206.github.io/f1-intelligence/)
 
 ---
 *Updated after every race weekend*
