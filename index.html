@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>F1 Intelligence Platform</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.8.0/Recharts.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Titillium+Web:ital,wght@0,200;0,300;0,400;0,600;0,700;0,900;1,400;1,600&display=swap" rel="stylesheet">
 <style>
   :root {
     --f1-red: #E10600;
@@ -28,7 +31,7 @@
     --cadillac: #7F7F7F;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: var(--f1-dark); color: var(--f1-text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+  body { background: var(--f1-dark); color: var(--f1-text); font-family: 'Titillium Web', 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
   .header { background: #0A0A0A; border-bottom: 2px solid var(--f1-red); padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 56px; position: sticky; top: 0; z-index: 100; }
   .logo { display: flex; align-items: center; gap: 12px; }
   .logo-icon { width: 32px; height: 20px; background: var(--f1-red); clip-path: polygon(0 0, 85% 0, 100% 50%, 85% 100%, 0 100%, 15% 50%); }
@@ -186,7 +189,7 @@
     </div>
 
     <div class="card">
-      <div class="card-title">Drivers' Championship — Top 8</div>
+      <div class="card-title">Drivers' Championship — Top 10</div>
       <div id="champ-bars"></div>
     </div>
   </div>
@@ -1393,7 +1396,7 @@ function renderDashboard() {
     `).join('');
   }
 
-  const driversColored = drivers.slice(0, 8).map(d => ({...d, _color: TEAM_COLORS[d.team] || '#888'}));
+  const driversColored = drivers.slice(0, 10).map(d => ({...d, _color: TEAM_COLORS[d.team] || '#888'}));
   const constructorsColored = constructors.slice(0, 6).map(c => ({...c, _color: TEAM_COLORS[c.name] || '#888'}));
   renderMiniBarList('champ-bars', driversColored, 'pts', 'name', d => `${d.team} \u00b7 ${d.wins}W \u00b7 ${d.podiums}P`, drivers[0].pts);
   renderMiniBarList('constructor-bars', constructorsColored, 'pts', 'name', d => `${d.wins}W \u00b7 ${d.podiums}P`, constructors[0].pts);
