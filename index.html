@@ -9,6 +9,22 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Titillium+Web:ital,wght@0,200;0,300;0,400;0,600;0,700;0,900;1,400;1,600&display=swap" rel="stylesheet">
 <style>
+  @font-face {
+    font-family: 'Formula1';
+    src: url('data:font/truetype;base64,PASTE_REGULAR_HERE') format('truetype');
+    font-weight: 400;
+  }
+  @font-face {
+    font-family: 'Formula1';
+    src: url('data:font/truetype;base64,PASTE_BOLD_HERE') format('truetype');
+    font-weight: 700;
+  }
+  @font-face {
+    font-family: 'Formula1Wide';
+    src: url('data:font/truetype;base64,PASTE_WIDE_HERE') format('truetype');
+    font-weight: 400;
+  }
+  
   :root {
     --f1-red: #E10600;
     --f1-dark: #0A0A0A;
@@ -31,7 +47,7 @@
     --cadillac: #7F7F7F;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: var(--f1-dark); color: var(--f1-text); font-family: 'Titillium Web', 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+  body { background: var(--f1-dark); color: var(--f1-text); font-family: 'Formula1', sans-serif; min-height: 100vh; }
   .header { background: #0A0A0A; border-bottom: 2px solid var(--f1-red); padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 56px; position: sticky; top: 0; z-index: 100; }
   .logo { display: flex; align-items: center; gap: 12px; }
   .logo-icon { width: 32px; height: 20px; background: var(--f1-red); clip-path: polygon(0 0, 85% 0, 100% 50%, 85% 100%, 0 100%, 15% 50%); }
@@ -189,7 +205,7 @@
     </div>
 
     <div class="card">
-      <div class="card-title">Drivers' Championship — Top 10</div>
+      <div class="card-title">Drivers' Championship — Top 8</div>
       <div id="champ-bars"></div>
     </div>
   </div>
@@ -1396,7 +1412,7 @@ function renderDashboard() {
     `).join('');
   }
 
-  const driversColored = drivers.slice(0, 10).map(d => ({...d, _color: TEAM_COLORS[d.team] || '#888'}));
+  const driversColored = drivers.slice(0, 8).map(d => ({...d, _color: TEAM_COLORS[d.team] || '#888'}));
   const constructorsColored = constructors.slice(0, 6).map(c => ({...c, _color: TEAM_COLORS[c.name] || '#888'}));
   renderMiniBarList('champ-bars', driversColored, 'pts', 'name', d => `${d.team} \u00b7 ${d.wins}W \u00b7 ${d.podiums}P`, drivers[0].pts);
   renderMiniBarList('constructor-bars', constructorsColored, 'pts', 'name', d => `${d.wins}W \u00b7 ${d.podiums}P`, constructors[0].pts);
