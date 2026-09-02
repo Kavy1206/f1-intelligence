@@ -1,6 +1,6 @@
 # 🏎️ F1 Intelligence 2026
 
-A real-time Formula 1 analytics and prediction platform for the 2026 season.
+A real-time Formula 1 analytics and prediction platform for the 2026 season based on 27,326 data entries.
 
 ## Features
 - 📊 Live driver & constructor standings
