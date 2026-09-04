@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>F1 Intelligence · Strategy Lab</title>
+<style>
+:root{--bg:#08090b;--panel:#101216;--panel2:#15181e;--line:#252932;--text:#f2f3f5;--muted:#9da3ad;--accent:#e10600;--accent2:#ff5a54;--good:#66d98a;--warn:#f2c14e;--bad:#ff7670}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#151820 0,#08090b 55%);color:var(--text);font:15px/1.55 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}a{color:#fff;text-decoration:none}.wrap{max-width:1180px;margin:auto;padding:34px 22px 70px}.hero{display:flex;justify-content:space-between;gap:24px;align-items:end;padding-bottom:28px;border-bottom:1px solid var(--line)}.eyebrow{color:#ff6f69;font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.hero h1{margin:8px 0 8px;font-size:clamp(34px,6vw,64px);line-height:.98;letter-spacing:-.04em}.hero p{margin:0;color:var(--muted);max-width:720px;font-size:16px}.back{white-space:nowrap;color:var(--muted);padding:10px 14px;border:1px solid var(--line);border-radius:999px}.grid{display:grid;grid-template-columns:320px 1fr;gap:18px;margin-top:20px}.card{background:linear-gradient(180deg,rgba(255,255,255,.025),transparent),var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px}.card h2{font-size:16px;margin:0 0 14px}.controls{display:grid;gap:12px}.field{display:grid;gap:6px}.field label{font-size:12px;color:var(--muted)}select,input[type=number]{width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:11px 12px;outline:none}input[type=range]{width:100%;accent-color:var(--accent)}.range-row{display:grid;grid-template-columns:1fr 64px;gap:10px;align-items:center}.value{font-variant-numeric:tabular-nums;text-align:right;color:#fff}.btn{width:100%;padding:12px 14px;border-radius:11px;border:0;background:var(--accent);color:#fff;font-weight:800;cursor:pointer}.btn:hover{background:#ff241d}.note{font-size:12px;color:var(--muted);padding-top:4px}.results{display:grid;gap:18px}.hero-result{display:grid;grid-template-columns:1.25fr .75fr;gap:18px}.reco{background:linear-gradient(135deg,rgba(225,6,0,.15),rgba(255,255,255,.02));border-color:#55211f}.reco .label{color:#ff8782;text-transform:uppercase;letter-spacing:.1em;font-size:11px;font-weight:800}.reco h3{margin:6px 0;font-size:28px}.reco p{margin:0;color:var(--muted)}.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.kpi{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:13px}.kpi b{display:block;font-size:21px}.kpi span{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em}.table{width:100%;border-collapse:collapse}.table th,.table td{padding:12px 10px;border-bottom:1px solid var(--line);text-align:left}.table th{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}.rank{color:#fff}.best{background:rgba(102,217,138,.08)}.delta-good{color:var(--good)}.delta-warn{color:var(--warn)}.chart{height:220px;display:flex;align-items:flex-end;gap:10px;padding:14px 4px 4px}.bar-wrap{height:100%;flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:6px}.bar{border-radius:8px 8px 2px 2px;background:linear-gradient(180deg,var(--accent2),var(--accent));min-height:3px}.bar-label{font-size:11px;color:var(--muted);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bar-val{font-size:11px;text-align:center;font-variant-numeric:tabular-nums}.evidence{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.evidence .mini{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px}.mini strong{display:block;font-size:12px}.mini span{display:block;color:var(--muted);font-size:11px;margin-top:4px}.foot{margin-top:18px;color:var(--muted);font-size:12px}.pill{display:inline-block;padding:4px 8px;border-radius:999px;border:1px solid var(--line);font-size:11px;color:var(--muted)}@media(max-width:900px){.grid,.hero-result{grid-template-columns:1fr}.evidence{grid-template-columns:repeat(2,1fr)}}@media(max-width:560px){.hero{align-items:flex-start;flex-direction:column}.kpis{grid-template-columns:1fr 1fr}.evidence{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<div><div class="eyebrow">F1 Intelligence · Experimental module</div><h1>Race Strategy Lab</h1><p>Change the assumptions. See how the race strategy moves. This is a transparent scenario model, not a magic eight-ball wearing a Ferrari cap.</p></div>
+<a class="back" href="index.html">← Dashboard</a>
+</header>
+
+<div class="grid">
+<aside class="card">
+<h2>Scenario</h2>
+<div class="controls">
+<div class="field"><label for="driver">Driver reference</label><select id="driver"><option>Loading drivers…</option></select></div>
+<div class="field"><label for="circuit">Circuit</label><select id="circuit"><option value="general">Generic race profile</option></select></div>
+<div class="field"><label>Race distance · laps</label><div class="range-row"><input id="laps" type="range" min="40" max="78" value="57"><div class="value" id="lapsVal">57</div></div></div>
+<div class="field"><label>Base lap pace · seconds</label><div class="range-row"><input id="pace" type="range" min="78" max="105" step="0.1" value="91.5"><div class="value" id="paceVal">91.5</div></div></div>
+<div class="field"><label>Tyre degradation · sec/lap</label><div class="range-row"><input id="deg" type="range" min="0.015" max="0.16" step="0.005" value="0.075"><div class="value" id="degVal">0.075</div></div></div>
+<div class="field"><label>Pit-lane time loss · seconds</label><div class="range-row"><input id="pit" type="range" min="14" max="32" step="0.5" value="21"><div class="value" id="pitVal">21.0</div></div></div>
+<div class="field"><label>Safety-car probability</label><div class="range-row"><input id="sc" type="range" min="0" max="0.70" step="0.01" value="0.24"><div class="value" id="scVal">24%</div></div></div>
+<div class="field"><label>Starting position</label><div class="range-row"><input id="gridPos" type="range" min="1" max="20" value="4"><div class="value" id="gridVal">P4</div></div></div>
+<button class="btn" id="run">Run 2,500 scenarios</button>
+<div class="note">The model uses tyre-degradation curves, pit loss, a safety-car shock and lap-to-lap noise. It does not claim to be a calibrated 2026 race simulator yet.</div>
+</div>
+</aside>
+
+<main class="results">
+<section class="hero-result">
+<div class="card reco"><div class="label">Current recommendation</div><h3 id="reco">Run the model</h3><p id="recoText">Choose a scenario and the lab will rank the available strategies by expected race time and show the trade-off between pace and risk.</p></div>
+<div class="card"><h2>Model state</h2><div class="kpis"><div class="kpi"><b id="bestTime">—</b><span>Best expected time</span></div><div class="kpi"><b id="spread">—</b><span>Strategy spread</span></div><div class="kpi"><b id="risk">—</b><span>SC sensitivity</span></div></div></div>
+</section>
+
+<section class="card"><h2>Strategy ranking</h2><table class="table"><thead><tr><th>Strategy</th><th>Expected</th><th>P10–P90</th><th>Stops</th><th>Trade-off</th></tr></thead><tbody id="strategyTable"></tbody></table></section>
+
+<section class="card"><h2>Expected race-time comparison</h2><div class="chart" id="chart"></div></section>
+
+<section class="card"><h2>Why the model picked it</h2><div class="evidence" id="evidence"></div></section>
+
+<section class="card"><h2>Counterfactual view</h2><p class="note">A useful strategy question is not just “what is fastest?” but “how bad is the next-best decision?” The spread below measures the cost of choosing the runner-up instead of the recommended strategy.</p><div class="kpis"><div class="kpi"><b id="runner">—</b><span>Runner-up</span></div><div class="kpi"><b id="cost">—</b><span>Cost vs best</span></div><div class="kpi"><b id="window">—</b><span>Suggested pit window</span></div></div></section>
+
+<div class="foot"><span class="pill">Method note</span> Strategy estimates are scenario outputs. They are intended for experimentation and decision support. Replace the generic parameterisation with calibrated tyre, pace and pit-loss distributions before using the outputs as a live-race model.</div>
+</main>
+</div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+const fmt=(n,d=1)=>Number(n).toFixed(d);
+const fields=[['laps',v=>v],['pace',v=>fmt(v,1)],['deg',v=>fmt(v,3)],['pit',v=>fmt(v,1)],['sc',v=>Math.round(v*100)+'%'],['gridPos',v=>'P'+v]];
+fields.forEach(([id,render])=>{const el=$(id),out=$(id+'Val')||$(id==='gridPos'?'gridVal':id+'Val'); if(!out)return; const sync=()=>out.textContent=render(Number(el.value));el.addEventListener('input',sync);sync();});
+
+const DRIVER_FALLBACK=[['max_verstappen','Max Verstappen'],['russell','George Russell'],['antonelli','Kimi Antonelli'],['leclerc','Charles Leclerc'],['norris','Lando Norris'],['piastri','Oscar Piastri'],['hamilton','Lewis Hamilton'],['alonso','Fernando Alonso'],['sainz','Carlos Sainz'],['gasly','Pierre Gasly']];
+
+async function loadCSV(path){try{const r=await fetch(path);if(!r.ok)throw new Error(r.status);return await r.text()}catch(e){return ''}}
+function parseCSV(text){const lines=text.trim().split(/\r?\n/);if(lines.length<2)return[];const headers=lines[0].split(',');return lines.slice(1).map(line=>{const out=[];let cur='',q=false;for(const c of line){if(c==='"')q=!q;else if(c===','&&!q){out.push(cur);cur=''}else cur+=c}out.push(cur);const o={};headers.forEach((h,i)=>o[h]=out[i]??'');return o})}
+
+async function boot(){
+ const [drivers,circuits]=await Promise.all([loadCSV('drivers_data.csv'),loadCSV('circuits.csv')]);
+ const dr=parseCSV(drivers); const ci=parseCSV(circuits);
+ $('driver').innerHTML='';
+ const seen=new Set(); const source=dr.length?dr:DRIVER_FALLBACK.map(([DriverId,FullName])=>({DriverId,FullName,Team:'—'}));
+ source.forEach(x=>{const id=x['Driver ID']||x.DriverId||x.driverId;if(!id||seen.has(id))return;seen.add(id);const o=document.createElement('option');o.value=id;o.textContent=(x['Full Name']||x.FullName||id)+(x.Team?' · '+x.Team:'');$('driver').appendChild(o)});
+ $('circuit').innerHTML='<option value="general">Generic race profile</option>';
+ ci.filter(x=>x.name).forEach(x=>{const o=document.createElement('option');o.value=x.circuitRef;o.textContent=x.name;$('circuit').appendChild(o)});
+ const last=(ci.find(x=>x.circuitRef==='madring')||ci[0]);if(last)$('circuit').value=last.circuitRef;
+ runModel();
+}
+
+function circuitFactor(name){const n=(name||'').toLowerCase();if(n.includes('monaco'))return{pace:1.0,deg:0.85,pit:1.08,sc:1.35};if(n.includes('monza'))return{pace:.93,deg:.78,pit:.98,sc:.72};if(n.includes('silverstone')||n.includes('spa')||n.includes('suzuka'))return{pace:1.01,deg:1.05,pit:1.0,sc:.86};if(n.includes('singapore')||n.includes('baku')||n.includes('las vegas')||n.includes('jeddah'))return{pace:1.04,deg:1.12,pit:1.02,sc:1.28};return{pace:1,deg:1,pit:1,sc:1};}
+
+function randn(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
+function simulate(strategy,p){
+ const cf=circuitFactor(p.circuitName), noise=0.045, laps=p.laps; let total=0; let stint=0; let stops=0; let stopSet=[];
+ if(strategy==='S-M-H'){stopSet=[Math.round(laps*.28),Math.round(laps*.62)]}
+ if(strategy==='M-H')stopSet=[Math.round(laps*.47)];
+ if(strategy==='M-M')stopSet=[Math.round(laps*.52)];
+ if(strategy==='S-H')stopSet=[Math.round(laps*.36)];
+ let compound=strategy.split('-')[0];
+ for(let lap=1;lap<=laps;lap++){
+   if(stopSet.includes(lap)){stops++;compound=strategy.split('-')[stops]||compound;stint=0;total+=p.pit*cf.pit*(Math.random()<p.sc*cf.sc?0.35:1);}
+   const tyreScale=compound==='S'?-.35:compound==='H'?.18:0;
+   const lapTime=p.pace*cf.pace + tyreScale + stint*p.deg*cf.deg + randn()*noise;
+   total+=lapTime;stint++;
+ }
+ if(Math.random()<p.sc*cf.sc){total-=Math.min(p.laps*.18,18+randn()*2)}
+ return total;
+}
+function runModel(){
+ const circuit=$('circuit').options[$('circuit').selectedIndex]?.text||'Generic race profile';
+ const p={laps:+$('laps').value,pace:+$('pace').value,deg:+$('deg').value,pit:+$('pit').value,sc:+$('sc').value,grid:+$('gridPos').value,circuitName:circuit};
+ const strategies=['S-H','M-H','M-M','S-M-H','NO-STOP']; const results=[];
+ strategies.forEach(name=>{const vals=[];for(let i=0;i<2500;i++)vals.push(simulate(name,p));vals.sort((a,b)=>a-b);const mean=vals.reduce((a,b)=>a+b,0)/vals.length;results.push({name,mean,p10:vals[124],p90:vals[2374]})});
+ results.sort((a,b)=>a.mean-b.mean);const best=results[0],runner=results[1];
+ $('reco').textContent=best.name==='NO-STOP'?'No-stop':'Run '+best.name.replaceAll('-',' → ');
+ const pitWindow=best.name.includes('M')?Math.round(p.laps*.42)+'–'+Math.round(p.laps*.52):best.name.includes('S-H')?Math.round(p.laps*.30)+'–'+Math.round(p.laps*.38):'N/A';
+ $('recoText').textContent=`Lowest expected race time under this scenario. The model also sees ${fmt(runner.mean-best.mean,1)}s between the top two strategies, so the recommendation is ${runner.mean-best.mean<2?'close':'meaningful'} rather than absolute.`;
+ $('bestTime').textContent=fmt(best.mean,1)+'s';$('spread').textContent=fmt(results.at(-1).mean-best.mean,1)+'s';$('risk').textContent=Math.round(p.sc*100)+'%';
+ $('runner').textContent=runner.name.replaceAll('-',' → ');$('cost').textContent='+'+fmt(runner.mean-best.mean,1)+'s';$('window').textContent=pitWindow;
+ $('strategyTable').innerHTML=results.map((r,i)=>{const trade=i===0?'Best expected time':r.mean-best.mean<2?'Close alternative':r.mean-best.mean<5?'Higher risk':'Dominated';return `<tr class="${i===0?'best':''}"><td><strong>${r.name.replaceAll('-',' → ')}</strong></td><td>${fmt(r.mean,2)}s</td><td>${fmt(r.p10,2)}–${fmt(r.p90,2)}s</td><td>${(r.name==='NO-STOP'?0:r.name.split('-').length-1)}</td><td class="${i===0?'delta-good':r.mean-best.mean<2?'delta-warn':''}">${trade}</td></tr>`}).join('');
+ const max=Math.max(...results.map(r=>r.mean)),min=Math.min(...results.map(r=>r.mean));$('chart').innerHTML=results.map(r=>{const h=20+((max-r.mean)/(max-min||1))*165;return `<div class="bar-wrap"><div class="bar-val">${fmt(r.mean,1)}s</div><div class="bar" style="height:${h}px"></div><div class="bar-label">${r.name}</div></div>`}).join('');
+ const cf=circuitFactor(circuit);$('evidence').innerHTML=[['Circuit profile',circuit],['Tyre degradation',fmt(p.deg*cf.deg,3)+' s/lap'],['Pit loss',fmt(p.pit*cf.pit,1)+' s'],['SC shock',fmt(p.sc*cf.sc*100,0)+'% effective chance']].map(x=>`<div class="mini"><strong>${x[0]}</strong><span>${x[1]}</span></div>`).join('');
+}
+$('run').addEventListener('click',runModel);$('circuit').addEventListener('change',runModel);$('driver').addEventListener('change',runModel);boot();
+</script>
+</body>
+</html>
