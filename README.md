@@ -78,7 +78,7 @@ The underlying data is stored separately from the presentation layer, so standin
 
 ### 🧠 Driver & circuit analysis
 
-Look at a driver's historical performance and compare how that performance changes from circuit to circuit. Circuit data includes track names, locations, countries and coordinates, while separate circuit information stores event and session-level context. citeturn26file0turn20file0
+Look at a driver's historical performance and compare how that performance changes from circuit to circuit. Circuit data includes track names, locations, countries and coordinates, while separate circuit information stores event and session-level context.
 
 ### 🔮 Qualifying & race predictions
 
@@ -265,7 +265,7 @@ f1-intelligence/
 └── ...                         # Additional reference datasets
 ```
 
-The main dashboard is deliberately self-contained, while the CSV files provide the historical and race-level data it works with. The repository currently includes dedicated datasets for drivers, circuits, qualifying, race results, lap times, pit stops and championship standings. fileciteturn18file0
+The main dashboard is deliberately self-contained, while the CSV files provide the historical and race-level data it works with. The repository currently includes dedicated datasets for drivers, circuits, qualifying, race results, lap times, pit stops and championship standings.
 
 ---
 
