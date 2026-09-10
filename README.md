@@ -74,7 +74,7 @@ The important bit is that the prediction is **an output of the analysis, not a r
 
 Track the driver and constructor championships and see how the 2026 season is developing.
 
-The underlying data is stored separately from the presentation layer, so standings are not just manually typed into the page. The driver reference dataset, for example, contains driver IDs, abbreviations, names and team associations, while race results carry grid position, classification, points and laps. citeturn19file0turn23file0
+The underlying data is stored separately from the presentation layer, so standings are not just manually typed into the page. The driver reference dataset, for example, contains driver IDs, abbreviations, names and team associations, while race results carry grid position, classification, points and laps.
 
 ### 🧠 Driver & circuit analysis
 
@@ -117,7 +117,7 @@ Some of the main files are:
 | `constructor_results.csv` | Constructor race results |
 | `constructor_standings.csv` | Constructor championship standings |
 
-The repository currently contains a sizeable historical dataset, with the dashboard and its data living together in the same repository. The current `index.html` is a large static application, while the CSV files act as the data layer. fileciteturn18file0turn23file0
+The repository currently contains a sizeable historical dataset, with the dashboard and its data living together in the same repository. The current `index.html` is a large static application, while the CSV files act as the data layer.
 
 ---
 
@@ -210,8 +210,7 @@ The output should answer **"who is favoured and why?"**, not pretend that uncert
 | AI assistant | Anthropic Claude API |
 | Deployment | GitHub Pages |
 
-The repository currently has no Node.js build pipeline or front-end framework dependency. The main dashboard is served as a static page, with `index.html` acting as the application entry point. fileciteturn12file0turn18file0
-
+The repository currently has no Node.js build pipeline or front-end framework dependency. The main dashboard is served as a static page, with `index.html` acting as the application entry point.
 ---
 
 ## Run it locally
